@@ -340,6 +340,20 @@ img { max-width: 100%; }
     padding-left: 1.1rem; margin: 0;
   }
 
+  /* ---- published rate inside a Now card ---- */
+  .rate{
+    margin-top: 1.1rem; padding-top: 0.9rem;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 0.75rem;
+    letter-spacing: 0.06em; color: var(--ink-2); line-height: 1.6;
+  }
+  .rate b{ font-weight: 500; color: var(--ink); font-size: 0.8125rem; }
+  .rate span{
+    display: block; margin-top: 0.3rem;
+    font-size: 0.625rem; letter-spacing: 0.13em;
+    text-transform: uppercase; color: var(--ink-3);
+  }
+
   /* ---- call to action inside a Now card ---- */
   .now-cta{ margin-top: 0.9rem; }
   .now-cta a{
@@ -596,7 +610,7 @@ img { max-width: 100%; }
   }
   .plate img{
     display: block;
-    width: 100%; max-width: 11rem; height: auto;
+    width: 100%; max-width: 22rem; height: auto;
     mix-blend-mode: multiply;
   }
   :root[data-theme="dark"] .plate img{ filter: invert(1) brightness(1.08); mix-blend-mode: screen; }
