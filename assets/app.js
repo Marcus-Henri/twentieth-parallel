@@ -124,3 +124,36 @@
     window.addEventListener('resize', update, { passive: true });
     update();
   })();
+
+/* ---- enquiry form: send without leaving the page ---- */
+(function () {
+    var form = document.querySelector('.enq-form');
+    if (!form || !window.fetch) { return; }   // without JS the plain POST still works
+    var btn = form.querySelector('button[type="submit"]');
+    var status = form.querySelector('.enq-status');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      btn.disabled = true;
+      status.removeAttribute('data-state');
+      status.textContent = 'Sending…';
+
+      fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { Accept: 'application/json' }
+      }).then(function (r) {
+        if (!r.ok) { throw new Error('bad status'); }
+        var thanks = document.createElement('p');
+        thanks.className = 'enq-thanks';
+        thanks.textContent = 'Thank you — that reached me. I read everything myself, and I answer most things.';
+        thanks.setAttribute('tabindex', '-1');
+        form.parentNode.replaceChild(thanks, form);
+        thanks.focus();
+      }).catch(function () {
+        btn.disabled = false;
+        status.setAttribute('data-state', 'err');
+        status.textContent = 'Didn’t send — try LinkedIn instead';
+      });
+    });
+  })();
