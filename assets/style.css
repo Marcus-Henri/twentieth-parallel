@@ -308,7 +308,7 @@ img { max-width: 100%; }
     width: 1.75rem; height: 1.75rem; flex: 0 0 1.75rem;
     display: inline-flex; align-items: center; justify-content: center;
   }
-  .dl-link:hover .dl-ico{ background: var(--brass); color: var(--paper); }
+  .dl-link:hover .dl-ico{ background: var(--brass); color: var(--ground); }
   .dl-text{ display: block; }
   .dl-text b{
     display: block; font-family: var(--display); font-weight: 600;
