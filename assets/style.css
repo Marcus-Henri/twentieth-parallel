@@ -149,8 +149,9 @@ img { max-width: 100%; }
   .nav li:nth-child(4) a{ --nav-dot: var(--moss); }
   .nav li:nth-child(5) a{ --nav-dot: var(--clay); }
   .nav li:nth-child(6) a{ --nav-dot: var(--sepia); }
-  .nav li:nth-child(7) a{ --nav-dot: var(--brass); }
-  .nav li:nth-child(8) a{ --nav-dot: var(--plum); }
+  .nav li:nth-child(7) a{ --nav-dot: var(--seal); }
+  .nav li:nth-child(8) a{ --nav-dot: var(--brass); }
+  .nav li:nth-child(9) a{ --nav-dot: var(--plum); }
 
   @media (min-width: 64rem){
     .shell{ grid-template-columns: 13rem minmax(0,1fr); gap: 3.5rem; }
@@ -406,19 +407,6 @@ img { max-width: 100%; }
 
   /* ============ dispatches ============ */
   .posts{ display: flex; flex-direction: column; }
-  .post{
-    display: grid; gap: 0.3rem;
-    padding-block: 1.25rem;
-    border-top: 1px solid var(--rule-soft);
-  }
-  .post:first-child{ border-top: 0; padding-top: 0; }
-  .post .status{
-    font-family: var(--mono); font-size: 0.625rem;
-    letter-spacing: 0.16em; text-transform: uppercase; color: var(--seal);
-  }
-  .post h3{ font-size: 1.1875rem; font-weight: 400; }
-  .post p{ color: var(--ink-2); font-size: 0.9375rem; margin: 0; }
-
   /* ============ elsewhere ============ */
   .links{
     display: grid;
@@ -793,6 +781,53 @@ img { max-width: 100%; }
     display: block; width: 100%; max-width: 26.5rem; height: auto;
     background: #000; border: 1px solid var(--rule); padding: 0.6rem;
   }
+
+  /* ============ dispatches ============ */
+  #dispatches{ --accent: var(--seal); }
+
+  .post{ max-width: 38rem; }
+  .post-head{ margin-bottom: 1.75rem; }
+  .dateline{
+    font-family: var(--mono); font-size: 0.6875rem; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--ink-3); margin: 0 0 0.85rem;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.7rem;
+  }
+  .dateline i{
+    font-style: normal; width: 3px; height: 3px; border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 70%, transparent);
+  }
+  .post-title{
+    font-family: var(--display); font-weight: 600;
+    font-size: clamp(1.75rem, 5.2vw, 2.5rem);
+    line-height: 1.04; letter-spacing: -0.024em;
+    margin: 0; text-wrap: balance;
+  }
+  .post-sub{
+    font-family: var(--display); font-style: italic; font-weight: 400;
+    font-size: 1.1875rem; line-height: 1.32; color: var(--ink-2);
+    margin: 0.55rem 0 0; max-width: var(--measure);
+  }
+  .post-body > p{ margin: 0 0 1.15rem; max-width: var(--measure); }
+  .post-body > p:first-of-type::first-letter{
+    float: left; font-family: var(--display); font-weight: 600;
+    font-size: 3.5em; line-height: 0.8;
+    padding: 0.06em 0.1em 0 0; color: var(--accent);
+  }
+  .post-body .beat{
+    font-family: var(--display); font-style: italic; font-weight: 500;
+    font-size: 1.1875rem; line-height: 1.4; color: var(--ink);
+    border-left: 2px solid color-mix(in srgb, var(--accent) 50%, transparent);
+    padding-left: 1.1rem; margin: 1.7rem 0;
+  }
+  .post-foot{
+    margin-top: 2.25rem; padding-top: 0.9rem;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 0.6875rem; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-3); max-width: var(--measure);
+  }
+  .post-foot a{ color: var(--accent); }
 
   /* ============ earlier ============ */
   #earlier{ --accent: var(--sepia); }
