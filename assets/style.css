@@ -287,6 +287,18 @@ img { max-width: 100%; }
   }
   .sec-note{ max-width: var(--measure); margin: 0.85rem 0 0; color: var(--ink-2); }
 
+  /* ---- call to action inside a Now card ---- */
+  .now-cta{ margin-top: 0.9rem; }
+  .now-cta a{
+    font-family: var(--mono); font-size: 0.6875rem; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); text-decoration: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    padding-bottom: 0.2rem;
+    transition: border-color 0.18s ease, color 0.18s ease;
+  }
+  .now-cta a:hover{ color: var(--seal); border-color: var(--seal); }
+
   /* ---- download control (CV) ---- */
   .dl{ margin: 1.25rem 0 0; max-width: var(--measure); }
   .dl-link{
