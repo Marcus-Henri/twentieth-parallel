@@ -148,10 +148,11 @@ img { max-width: 100%; }
   .nav li:nth-child(3) a{ --nav-dot: var(--indigo); }
   .nav li:nth-child(4) a{ --nav-dot: var(--moss); }
   .nav li:nth-child(5) a{ --nav-dot: var(--clay); }
-  .nav li:nth-child(6) a{ --nav-dot: var(--sepia); }
-  .nav li:nth-child(7) a{ --nav-dot: var(--seal); }
-  .nav li:nth-child(8) a{ --nav-dot: var(--brass); }
-  .nav li:nth-child(9) a{ --nav-dot: var(--plum); }
+  .nav li:nth-child(6) a{ --nav-dot: var(--celadon); }
+  .nav li:nth-child(7) a{ --nav-dot: var(--sepia); }
+  .nav li:nth-child(8) a{ --nav-dot: var(--seal); }
+  .nav li:nth-child(9) a{ --nav-dot: var(--brass); }
+  .nav li:nth-child(10) a{ --nav-dot: var(--plum); }
 
   @media (min-width: 64rem){
     .shell{ grid-template-columns: 13rem minmax(0,1fr); gap: 3.5rem; }
@@ -829,8 +830,20 @@ img { max-width: 100%; }
   }
   .post-foot a{ color: var(--accent); }
 
-  /* ============ earlier ============ */
+  /* ============ earlier + shipped (shared .era layout) ============ */
   #earlier{ --accent: var(--sepia); }
+  #shipped{ --accent: var(--celadon); }
+  .era .meta{
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1rem;
+    margin-top: 0.85rem;
+    font-family: var(--mono); font-size: 0.625rem; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .era .meta span{ display: inline-flex; align-items: center; gap: 0.4rem; }
+  .era .meta span::before{
+    content: ""; width: 3px; height: 3px; border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 70%, transparent);
+  }
   .eras{ display: flex; flex-direction: column; gap: 2.75rem; }
   .era{
     display: grid;
