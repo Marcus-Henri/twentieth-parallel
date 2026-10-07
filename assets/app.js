@@ -406,8 +406,9 @@ window.buildPhotoDrum = function (containerId, images, direction) {
 
     var mainRect = main.getBoundingClientRect();
     var scrollY = window.pageYOffset || document.documentElement.scrollTop;
-    var mainLeft = mainRect.left + scrollY;
-    var mainRight = mainRect.right + scrollY;
+    var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    var mainLeft = mainRect.left + scrollX;
+    var mainRight = mainRect.right + scrollX;
     var docHeight = document.documentElement.scrollHeight;
     var viewportWidth = document.documentElement.clientWidth;
     var trackOffset = 16;
@@ -444,8 +445,8 @@ window.buildPhotoDrum = function (containerId, images, direction) {
       if (r.width === 0 && r.height === 0) { return; } /* not rendered */
       var top = r.top + scrollY - PAD;
       var bottom = r.bottom + scrollY + PAD;
-      var left = r.left + scrollY - PAD;
-      var right = r.right + scrollY + PAD;
+      var left = r.left + scrollX - PAD;
+      var right = r.right + scrollX + PAD;
       var trackHere = trackX[side];
       var nearX = side === 'right' ? right : left;
       var farX = side === 'right' ? left : right;
