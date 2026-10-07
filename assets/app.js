@@ -334,17 +334,20 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   });
 };
 
-/* ---- scroll spine: a single line that grows as the page is scrolled, drawing a
-   box around each marginal quote as it passes, then switching to the other side
-   of the page and continuing. Desktop-only — below the breakpoint where .main
-   gets its own column there's no margin left for it to run through. ---- */
+
+/* ---- scroll spine: two parallel lines that start apart, converge to a point,
+   then run down the page as one line — splitting back into a parallel pair to
+   frame the top and bottom of each marginal quote as it passes, then merging
+   again and switching to the other side. ("Two parallel lines" — the 20th
+   Parallel — that's the joke.) Starts as a plain dark line; color is a later
+   pass. Desktop-only — below the breakpoint where .main gets its own column
+   there's no margin left for it to run through. ---- */
 (function () {
   var MIN_WIDTH = 1024; /* matches the 64rem breakpoint where .main gets its own column */
   var SVGNS = 'http://www.w3.org/2000/svg';
-  var wrap = null, svg = null, path = null, grad = null, pathLen = 0;
-  var samples = []; /* {len, y} — maps distance along the path to how far down the
-    page it reaches, using a running max so the box each quote gets traced in
-    (which briefly doubles back on itself) still reads as forward progress */
+  var SPLIT = 3.5; /* gap between the two strokes wherever the line splits */
+  var wrap = null, svg = null, pathA = null, pathB = null, arrow = null;
+  var lenA = 0, lenB = 0, samples = [];
   var resizeTimer = null;
 
   function reducedMotion() {
@@ -363,34 +366,29 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     svg = document.createElementNS(SVGNS, 'svg');
     svg.id = 'scrollLineSvg';
 
-    var defs = document.createElementNS(SVGNS, 'defs');
-    grad = document.createElementNS(SVGNS, 'linearGradient');
-    grad.id = 'scrollLineGrad';
-    grad.setAttribute('gradientUnits', 'userSpaceOnUse');
-    grad.setAttribute('x1', '0'); grad.setAttribute('x2', '0');
-    grad.setAttribute('y1', '0'); grad.setAttribute('y2', '1');
-    ['var(--celadon)', 'var(--brass)', 'var(--seal)'].forEach(function (c, idx) {
-      var stop = document.createElementNS(SVGNS, 'stop');
-      stop.setAttribute('offset', (idx / 2 * 100) + '%');
-      stop.setAttribute('stop-color', c);
-      grad.appendChild(stop);
-    });
-    defs.appendChild(grad);
-    svg.appendChild(defs);
+    pathA = document.createElementNS(SVGNS, 'path');
+    pathA.setAttribute('class', 'scroll-line-stroke');
+    pathB = document.createElementNS(SVGNS, 'path');
+    pathB.setAttribute('class', 'scroll-line-stroke');
 
-    path = document.createElementNS(SVGNS, 'path');
-    path.id = 'scrollLinePath';
-    path.setAttribute('stroke', 'url(#scrollLineGrad)');
-    svg.appendChild(path);
+    arrow = document.createElementNS(SVGNS, 'path');
+    arrow.id = 'scrollLineArrow';
+    arrow.setAttribute('d', 'M -6 -4.5 L 7 0 L -6 4.5 Z');
 
+    svg.appendChild(pathA);
+    svg.appendChild(pathB);
+    svg.appendChild(arrow);
     wrap.appendChild(svg);
     document.body.appendChild(wrap);
   }
+
+  function f(n) { return n.toFixed(1); }
 
   function buildPath() {
     if (!supported()) { return; }
     ensureDom();
     wrap.hidden = false;
+
     var main = document.querySelector('.main');
     if (!main) { return; }
 
@@ -404,9 +402,25 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     var trackX = { right: mainRight + trackOffset, left: mainLeft - trackOffset };
     var pad = 10;
 
-    var quotes = Array.prototype.slice.call(document.querySelectorAll('blockquote.marg'));
+    /* ---- two lines start apart, side by side, and converge to a single
+       point near the top right, where they carry on as one ---- */
+    var convergeY = Math.max(30, mainRect.top + scrollY + 18);
+    var dA = 'M ' + f(mainLeft) + ' ' + f(convergeY - SPLIT);
+    var dB = 'M ' + f(mainLeft) + ' ' + f(convergeY + SPLIT);
+    dA += ' L ' + f(trackX.right) + ' ' + f(convergeY - SPLIT);
+    dB += ' L ' + f(trackX.right) + ' ' + f(convergeY + SPLIT);
+    dA += ' L ' + f(trackX.right) + ' ' + f(convergeY);
+    dB += ' L ' + f(trackX.right) + ' ' + f(convergeY);
+    /* merged from here down */
+
     var side = 'right';
-    var d = 'M ' + trackX[side].toFixed(1) + ' 0';
+
+    function mergedTo(x, y) {
+      var seg = ' L ' + f(x) + ' ' + f(y);
+      dA += seg; dB += seg;
+    }
+
+    var quotes = Array.prototype.slice.call(document.querySelectorAll('blockquote.marg'));
 
     quotes.forEach(function (q) {
       var r = q.getBoundingClientRect();
@@ -416,52 +430,63 @@ window.buildPhotoDrum = function (containerId, images, direction) {
       var left = r.left + scrollY - pad;
       var right = r.right + scrollY + pad;
       var enterX = side === 'right' ? right : left;
+      var otherX = side === 'right' ? left : right;
 
-      /* run down the track to the quote, jog in, trace all four sides of the box */
-      d += ' L ' + trackX[side].toFixed(1) + ' ' + top.toFixed(1);
-      d += ' L ' + enterX.toFixed(1) + ' ' + top.toFixed(1);
-      d += ' L ' + right.toFixed(1) + ' ' + top.toFixed(1);
-      d += ' L ' + right.toFixed(1) + ' ' + bottom.toFixed(1);
-      d += ' L ' + left.toFixed(1) + ' ' + bottom.toFixed(1);
-      d += ' L ' + left.toFixed(1) + ' ' + top.toFixed(1);
-      d += ' L ' + enterX.toFixed(1) + ' ' + top.toFixed(1);
+      /* merged: run the track down to the quote and jog onto its near edge */
+      mergedTo(trackX[side], top);
+      mergedTo(enterX, top);
 
-      /* exit on the opposite side and pick that track back up */
+      /* split: the top edge, traced as two parallel strokes */
+      dA += ' L ' + f(enterX) + ' ' + f(top - SPLIT) + ' L ' + f(otherX) + ' ' + f(top - SPLIT);
+      dB += ' L ' + f(enterX) + ' ' + f(top + SPLIT) + ' L ' + f(otherX) + ' ' + f(top + SPLIT);
+      dA += ' L ' + f(otherX) + ' ' + f(top);
+      dB += ' L ' + f(otherX) + ' ' + f(top);
+      /* merged again: down the far side of the box */
+      mergedTo(otherX, bottom);
+
+      /* split: the bottom edge, traced as two parallel strokes */
+      dA += ' L ' + f(otherX) + ' ' + f(bottom - SPLIT) + ' L ' + f(enterX) + ' ' + f(bottom - SPLIT);
+      dB += ' L ' + f(otherX) + ' ' + f(bottom + SPLIT) + ' L ' + f(enterX) + ' ' + f(bottom + SPLIT);
+      dA += ' L ' + f(enterX) + ' ' + f(bottom);
+      dB += ' L ' + f(enterX) + ' ' + f(bottom);
+
+      /* merged: back out to the track, switch sides, carry on */
+      mergedTo(trackX[side], bottom);
       var newSide = side === 'right' ? 'left' : 'right';
-      var exitX = newSide === 'right' ? right : left;
-      d += ' L ' + exitX.toFixed(1) + ' ' + bottom.toFixed(1);
-      d += ' L ' + trackX[newSide].toFixed(1) + ' ' + bottom.toFixed(1);
+      mergedTo(trackX[newSide], bottom);
       side = newSide;
     });
 
-    d += ' L ' + trackX[side].toFixed(1) + ' ' + docHeight;
+    mergedTo(trackX[side], docHeight);
 
-    path.setAttribute('d', d);
+    pathA.setAttribute('d', dA);
+    pathB.setAttribute('d', dB);
     svg.setAttribute('width', viewportWidth);
     svg.setAttribute('height', docHeight);
     wrap.style.height = docHeight + 'px';
-    grad.setAttribute('y2', docHeight);
 
-    pathLen = path.getTotalLength();
-    path.style.strokeDasharray = pathLen;
+    lenA = pathA.getTotalLength();
+    lenB = pathB.getTotalLength();
+    pathA.style.strokeDasharray = lenA;
+    pathB.style.strokeDasharray = lenB;
 
-    /* sample the path so "how much to reveal" can be driven by actual document
-       position rather than a raw length fraction — the box detours around each
-       quote add length without adding much vertical ground, so a plain
-       length-based fraction falls further and further behind scroll position
-       the more quotes it's passed. A running max of y keeps it monotonic
-       through those detours (a box briefly backtracks upward mid-trace). */
+    /* sample line A (close enough to the centerline throughout) so "how much
+       to reveal" can be driven by actual document position rather than a raw
+       length fraction — the split sections add length without adding much
+       vertical ground, and a plain length fraction would drift further and
+       further behind scroll position with every quote it's passed. A running
+       max of y keeps it monotonic through the brief backtracks in each box. */
     samples = [];
-    var sampleStep = Math.max(8, pathLen / 800);
+    var sampleStep = Math.max(8, lenA / 800);
     var runningMaxY = 0;
-    for (var len = 0; len <= pathLen; len += sampleStep) {
-      var pt = path.getPointAtLength(len);
+    for (var len = 0; len <= lenA; len += sampleStep) {
+      var pt = pathA.getPointAtLength(len);
       runningMaxY = Math.max(runningMaxY, pt.y);
       samples.push({ len: len, y: runningMaxY });
     }
-    var lastPt = path.getPointAtLength(pathLen);
+    var lastPt = pathA.getPointAtLength(lenA);
     runningMaxY = Math.max(runningMaxY, lastPt.y);
-    samples.push({ len: pathLen, y: runningMaxY });
+    samples.push({ len: lenA, y: runningMaxY });
 
     updateProgress();
   }
@@ -481,14 +506,30 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   }
 
   function updateProgress() {
-    if (!path || !pathLen || !samples.length) { return; }
+    if (!pathA || !lenA || !samples.length) { return; }
     var scrollY = window.pageYOffset || document.documentElement.scrollTop;
     /* reveal a bit ahead of the very top of the viewport, so a quote's box is
        finished tracing around the time it's actually being read, not only
        once it's scrolled fully past */
     var targetY = scrollY + window.innerHeight * 0.35;
-    var len = lengthForY(targetY);
-    path.style.strokeDashoffset = Math.max(0, pathLen - len);
+    var revealA = Math.min(lenA, lengthForY(targetY));
+    var fracDone = lenA ? revealA / lenA : 0;
+    var revealB = lenB * fracDone;
+
+    pathA.style.strokeDashoffset = Math.max(0, lenA - revealA);
+    pathB.style.strokeDashoffset = Math.max(0, lenB - revealB);
+
+    /* arrowhead rides the growing tip of line A, pointed the way it's heading */
+    if (arrow && revealA > 0) {
+      var tipLen = Math.min(lenA, revealA);
+      var p2 = pathA.getPointAtLength(tipLen);
+      var p1 = pathA.getPointAtLength(Math.max(0, tipLen - 2));
+      var angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+      arrow.setAttribute('transform', 'translate(' + f(p2.x) + ',' + f(p2.y) + ') rotate(' + f(angle) + ')');
+      arrow.style.opacity = '1';
+    } else if (arrow) {
+      arrow.style.opacity = '0';
+    }
   }
 
   var ticking = false;

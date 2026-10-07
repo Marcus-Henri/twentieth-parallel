@@ -856,7 +856,8 @@ img { max-width: 100%; }
     padding-top: 1.05rem;
   }
 
-  /* ============ scroll spine — grows as you scroll, boxes each quote in passing, switches sides ============ */
+  /* ============ scroll spine — two lines converge to one, split to frame each
+     quote top and bottom, grow as you scroll, never break stride ============ */
   #scrollLineWrap{
     position: absolute;
     top: 0; left: 0;
@@ -865,12 +866,18 @@ img { max-width: 100%; }
     z-index: 1;
   }
   #scrollLineSvg{ display: block; }
-  #scrollLinePath{
+  .scroll-line-stroke{
     fill: none;
-    stroke-width: 2;
+    stroke: var(--ink);
+    stroke-width: 1.5;
     stroke-linejoin: round;
     stroke-linecap: round;
-    opacity: 0.9;
+    opacity: 0.82;
+  }
+  #scrollLineArrow{
+    fill: var(--ink);
+    opacity: 0;
+    transition: opacity 180ms ease;
   }
   @media (max-width: 63.9375rem){
     #scrollLineWrap{ display: none !important; }
