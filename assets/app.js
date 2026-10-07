@@ -253,7 +253,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     if (!queue.length) { refillQueue(); }
     var idx = -1;
     for (var k = 0; k < queue.length; k++) {
-      if ((queue[k].portrait ? 2 : 1) <= budget) { idx = k; break; }
+      if ((queue[k].portrait ? 3 : 1) <= budget) { idx = k; break; }
     }
     if (idx === -1) { refillQueue(); idx = 0; }
     return queue.splice(idx, 1)[0];
@@ -285,7 +285,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     var budget = FACE_BUDGET;
     while (budget > 0) {
       var im = takeNext(budget);
-      var span = im.portrait ? 2 : 1;
+      var span = im.portrait ? 3 : 1;
       /* each photo remembers how many times it's been dealt, across the whole
          life of this tower, so its own Nth appearance picks the Nth style in
          the cycle — offset by its own staggered starting point */
