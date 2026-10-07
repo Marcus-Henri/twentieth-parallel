@@ -358,7 +358,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     gets a small flag instead, reaching only this far, and always OUTWARD
     away from the content, so it can never cross anything no matter where
     the quote actually sits */
-  var wrap = null, svg = null, pathA = null, pathB = null, arrow = null;
+  var wrap = null, svg = null, pathA = null, pathB = null, arrow = null, signoff = null;
   var lenA = 0, lenB = 0, samples = [];
   var resizeTimer = null;
 
@@ -387,9 +387,20 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     arrow.id = 'scrollLineArrow';
     arrow.setAttribute('d', 'M -6 -4.5 L 7 0 L -6 4.5 Z');
 
+    /* a cursive sign-off the line "arrives at" once you reach the very
+       bottom — a plain fade rather than a letter-by-letter write-on, since
+       there's no reliable way to trace the length of rendered text the way
+       getTotalLength() does for a path */
+    signoff = document.createElementNS(SVGNS, 'text');
+    signoff.id = 'scrollLineSignoff';
+    signoff.setAttribute('text-anchor', 'end'); /* grows leftward from the
+      track, away from the page edge, so it can't run off the right side */
+    signoff.textContent = 'Thanks for stopping by!';
+
     svg.appendChild(pathA);
     svg.appendChild(pathB);
     svg.appendChild(arrow);
+    svg.appendChild(signoff);
     wrap.appendChild(svg);
     document.body.appendChild(wrap);
   }
@@ -491,9 +502,12 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     dA += flourish;
     dB += flourish;
 
+    signoff.setAttribute('x', f(fx - 4));
+    signoff.setAttribute('y', f(fy + 104));
+
     pathA.setAttribute('d', dA);
     pathB.setAttribute('d', dB);
-    var svgHeight = docHeight + 70;
+    var svgHeight = docHeight + 150;
     svg.setAttribute('width', viewportWidth);
     svg.setAttribute('height', svgHeight);
     wrap.style.height = svgHeight + 'px';
@@ -550,6 +564,12 @@ window.buildPhotoDrum = function (containerId, images, direction) {
 
     pathA.style.strokeDashoffset = Math.max(0, lenA - revealA);
     pathB.style.strokeDashoffset = Math.max(0, lenB - revealB);
+
+    /* the sign-off only ever shows once the line has actually drawn all the
+       way down to the flourish — not just whenever you're near the bottom */
+    if (signoff) {
+      signoff.classList.toggle('show', atBottom && fracDone >= 0.999);
+    }
 
     if (arrow && revealA > 0) {
       var tipLen = Math.min(lenA, revealA);

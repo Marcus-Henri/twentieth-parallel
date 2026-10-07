@@ -879,6 +879,17 @@ img { max-width: 100%; }
     opacity: 0;
     transition: opacity 180ms ease;
   }
+  #scrollLineSignoff{
+    font-family: 'Caveat', cursive;
+    font-size: 1.9rem;
+    fill: var(--ink);
+    opacity: 0;
+    transform: rotate(-2deg);
+    transform-box: fill-box;
+    transform-origin: right bottom;
+    transition: opacity 700ms ease 150ms;
+  }
+  #scrollLineSignoff.show{ opacity: 0.88; }
   @media (max-width: 63.9375rem){
     #scrollLineWrap{ display: none !important; }
   }
