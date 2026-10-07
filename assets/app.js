@@ -212,10 +212,10 @@ var PD_STYLES = [
 
 /* builds one tower: containerId is an empty .pdrum-frame element, images is
    [{src, title, portrait}], direction -1 flips right-to-left, 1 flips left-to-right.
-   Only ONE set of photos (2 wide x 5 tall) is ever in the DOM at a time — every few
-   seconds it flips over, face-down, and comes back up showing the next set. That
-   keeps it to a single column of pictures with no second column ever able to bleed
-   into it, and the photos sit flat (no ongoing 3D tilt) so their edges stay crisp. */
+   A genuine single column, stacked top to bottom — not a wide grid. Every few
+   seconds the whole stack flips over, face-down, and comes back up showing the
+   next set of photos, and the photos sit flat (no ongoing 3D tilt) so their
+   edges stay crisp in between. */
 window.buildPhotoDrum = function (containerId, images, direction) {
   var container = document.getElementById(containerId);
   if (!container || !images || !images.length) { return; }
@@ -235,7 +235,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
      together, instead of each one showing something different. */
   images.forEach(function (im, idx) { im._pdOffset = idx % PD_STYLES.length; });
 
-  var ROWS = 5, COLS = 2;
+  var ROWS = 5, COLS = 1;
   var BUDGET = ROWS * COLS;
 
   var queue = images.slice();
@@ -337,15 +337,27 @@ window.buildPhotoDrum = function (containerId, images, direction) {
 
 
 /* ---- scroll spine: two parallel lines start apart near the top, converge to
-   a point, then run straight down the right margin as one line as you scroll
-   — ending in a small flourish once you reach the bottom. Deliberately simple:
-   an earlier version tried to split the line around every quote and ended up
-   cutting across body text instead. Desktop-only — below the breakpoint where
-   .main gets its own column there's no margin left for it to run through. ---- */
+   a point, then run down the page as one line — tracing a small mark beside
+   each quote as it passes (a full double-ruled box when the quote already
+   sits close to the margin, or just a short flag poking OUTWARD into the
+   margin when it doesn't — so the line is never forced to sweep across
+   unrelated text to reach it), switching from one side of the page to the
+   other after every quote, then ending in a small flourish at the bottom.
+   ("Two parallel lines" — the 20th Parallel — that's the joke.) Desktop-only
+   — below the breakpoint where .main gets its own column there's no margin
+   left for it to run through. ---- */
 (function () {
   var MIN_WIDTH = 1024; /* matches the 64rem breakpoint where .main gets its own column */
   var SVGNS = 'http://www.w3.org/2000/svg';
-  var SPLIT = 3.5; /* gap between the two strokes where the line starts, before it converges */
+  var SPLIT = 3.5; /* gap between the two strokes wherever the line splits */
+  var PAD = 10; /* breathing room traced around each quote's own box */
+  var NEAR_CAP = 70; /* if a quote's near edge is within this of the track, the
+    jog over to it — and the trace around its own top/bottom edge once there —
+    can't cross anything else to get there, so it's safe to box fully */
+  var TICK_NEAR = 8, TICK_FAR = 16; /* a quote too deep in the column for that
+    gets a small flag instead, reaching only this far, and always OUTWARD
+    away from the content, so it can never cross anything no matter where
+    the quote actually sits */
   var wrap = null, svg = null, pathA = null, pathB = null, arrow = null;
   var lenA = 0, lenB = 0, samples = [];
   var resizeTimer = null;
@@ -397,26 +409,80 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     var mainLeft = mainRect.left + scrollY;
     var mainRight = mainRect.right + scrollY;
     var docHeight = document.documentElement.scrollHeight;
+    var viewportWidth = document.documentElement.clientWidth;
     var trackOffset = 16;
-    var trackX = mainRight + trackOffset;
+    var trackX = { right: mainRight + trackOffset, left: mainLeft - trackOffset };
 
     /* ---- two lines start apart, side by side, and converge to a single
-       point near the top right, where they carry on as one, straight down
-       the right margin, all the way to the bottom ---- */
+       point near the top right, where they carry on as one ---- */
     var convergeY = Math.max(30, mainRect.top + scrollY + 18);
     var dA = 'M ' + f(mainLeft) + ' ' + f(convergeY - SPLIT);
     var dB = 'M ' + f(mainLeft) + ' ' + f(convergeY + SPLIT);
-    dA += ' L ' + f(trackX) + ' ' + f(convergeY - SPLIT);
-    dB += ' L ' + f(trackX) + ' ' + f(convergeY + SPLIT);
-    dA += ' L ' + f(trackX) + ' ' + f(convergeY);
-    dB += ' L ' + f(trackX) + ' ' + f(convergeY);
-    /* merged from here: straight down, nothing to detour around */
-    dA += ' L ' + f(trackX) + ' ' + f(docHeight);
-    dB += ' L ' + f(trackX) + ' ' + f(docHeight);
+    dA += ' L ' + f(trackX.right) + ' ' + f(convergeY - SPLIT);
+    dB += ' L ' + f(trackX.right) + ' ' + f(convergeY + SPLIT);
+    dA += ' L ' + f(trackX.right) + ' ' + f(convergeY);
+    dB += ' L ' + f(trackX.right) + ' ' + f(convergeY);
+    /* merged from here down */
+
+    var side = 'right';
+
+    function mergedTo(x, y) {
+      var seg = ' L ' + f(x) + ' ' + f(y);
+      dA += seg; dB += seg;
+    }
+    function boxEdge(y, fromX, toX) {
+      dA += ' L ' + f(fromX) + ' ' + f(y - SPLIT) + ' L ' + f(toX) + ' ' + f(y - SPLIT);
+      dB += ' L ' + f(fromX) + ' ' + f(y + SPLIT) + ' L ' + f(toX) + ' ' + f(y + SPLIT);
+      dA += ' L ' + f(toX) + ' ' + f(y);
+      dB += ' L ' + f(toX) + ' ' + f(y);
+    }
+
+    var quotes = Array.prototype.slice.call(document.querySelectorAll('blockquote.marg'));
+
+    quotes.forEach(function (q) {
+      var r = q.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) { return; } /* not rendered */
+      var top = r.top + scrollY - PAD;
+      var bottom = r.bottom + scrollY + PAD;
+      var left = r.left + scrollY - PAD;
+      var right = r.right + scrollY + PAD;
+      var trackHere = trackX[side];
+      var nearX = side === 'right' ? right : left;
+      var farX = side === 'right' ? left : right;
+      var nearDist = Math.abs(trackHere - nearX);
+
+      var enterX, otherX;
+      if (nearDist <= NEAR_CAP) {
+        /* close enough to the margin that reaching it, and tracing around
+           its own edges once there, can't sweep across anything else */
+        enterX = nearX;
+        otherX = farX;
+      } else {
+        /* too deep in the column to reach safely — flag it instead with a
+           short bracket poking OUT into the margin, never in toward the
+           text, so it's structurally unable to cross anything */
+        enterX = trackHere + (side === 'right' ? TICK_NEAR : -TICK_NEAR);
+        otherX = trackHere + (side === 'right' ? TICK_FAR : -TICK_FAR);
+      }
+
+      mergedTo(trackHere, top);
+      mergedTo(enterX, top);
+      boxEdge(top, enterX, otherX);
+      mergedTo(otherX, bottom);
+      boxEdge(bottom, otherX, enterX);
+      mergedTo(trackHere, bottom);
+
+      /* switch to the other side of the page and carry on from there */
+      var newSide = side === 'right' ? 'left' : 'right';
+      mergedTo(trackX[newSide], bottom);
+      side = newSide;
+    });
+
+    mergedTo(trackX[side], docHeight);
 
     /* ---- a small hand-drawn-ish flourish once it reaches the very bottom,
        so the line visibly comes to an end rather than just trailing off ---- */
-    var fx = trackX, fy = docHeight;
+    var fx = trackX[side], fy = docHeight;
     var flourish =
       ' C ' + f(fx - 2) + ' ' + f(fy + 22) + ' ' + f(fx - 34) + ' ' + f(fy + 18) + ' ' + f(fx - 30) + ' ' + f(fy + 42) +
       ' C ' + f(fx - 27) + ' ' + f(fy + 60) + ' ' + f(fx - 2) + ' ' + f(fy + 60) + ' ' + f(fx - 8) + ' ' + f(fy + 40) +
@@ -427,7 +493,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     pathA.setAttribute('d', dA);
     pathB.setAttribute('d', dB);
     var svgHeight = docHeight + 70;
-    svg.setAttribute('width', document.documentElement.clientWidth);
+    svg.setAttribute('width', viewportWidth);
     svg.setAttribute('height', svgHeight);
     wrap.style.height = svgHeight + 'px';
 
@@ -437,9 +503,13 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     pathB.style.strokeDasharray = lenB;
 
     /* sample line A so "how much to reveal" can be driven by actual document
-       position rather than a raw length fraction */
+       position rather than a raw length fraction — the split sections add
+       length without adding much vertical ground, and a plain length
+       fraction would drift further and further behind scroll position with
+       every quote it's passed. A running max of y keeps it monotonic
+       through the brief backtracks in each box/flag. */
     samples = [];
-    var sampleStep = Math.max(8, lenA / 400);
+    var sampleStep = Math.max(8, lenA / 800);
     var runningMaxY = 0;
     for (var len = 0; len <= lenA; len += sampleStep) {
       var pt = pathA.getPointAtLength(len);
@@ -515,11 +585,12 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   buildPath();
   window.addEventListener('load', buildPath);
   /* a fixed delay can't know when the page is actually done growing — a page
-     this image-heavy (two 40+ photo towers, lazy-loaded galleries further
-     down) can still be gaining height well after 'load', and the SVG's own
-     height gets measured too early, clipping everything below that point
-     (the flourish included). Watch the page's actual height and rebuild
-     whenever it changes, instead of guessing how long to wait. */
+     this image-heavy (two photo towers, lazy-loaded galleries further down)
+     can still be gaining height well after 'load', and the SVG's own height
+     gets measured too early, clipping everything below that point (the
+     flourish included, and every quote below the cutoff). Watch the page's
+     actual height and rebuild whenever it changes, instead of guessing how
+     long to wait. */
   var lastHeight = document.documentElement.scrollHeight;
   function rebuildIfTaller() {
     var h = document.documentElement.scrollHeight;

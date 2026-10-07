@@ -1000,13 +1000,13 @@ img { max-width: 100%; }
 .pdrum-wrap{ margin: 1.6rem 0 2.1rem; }
 .pdrum-frame{
   position: relative;
-  width: min(100%, 46rem);
+  width: min(100%, 20rem);
   margin: 0 auto;
 }
 .pdrum-scene{
   position: relative;
   width: 100%;
-  height: clamp(420px, 46vw, 560px);
+  height: clamp(480px, 62vw, 720px);
   perspective: 1700px;
   overflow: hidden;
   border: 1px solid var(--rule);
@@ -1015,7 +1015,7 @@ img { max-width: 100%; }
 }
 .pdrum{
   position: absolute; inset: 0;
-  display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(5, 1fr);
+  display: grid; grid-template-columns: repeat(1, 1fr); grid-template-rows: repeat(5, 1fr);
   gap: 8px; padding: 8px;
   transform-style: preserve-3d;
   transform: rotateY(0deg);
@@ -1045,10 +1045,10 @@ img { max-width: 100%; }
   opacity: 0; transform: translateY(4px);
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
-/* a modest lift, sized for this tight 2-up grid — the old 1.5x scale was tuned for
-   the spaced-out 3D drum and, in this denser layout, swallowed the rows above and
-   below it. Dimming its siblings while it's focused keeps the lift reading as
-   deliberate instead of like the photos are colliding. */
+/* a modest lift, sized for this single-column stack — the old 1.5x scale was
+   tuned for the spaced-out 3D drum and, in this tighter column, swallowed the
+   rows above and below it. Dimming its siblings while it's focused keeps the
+   lift reading as deliberate instead of like the photos are colliding. */
 .pdrum-tile:hover, .pdrum-tile:focus-visible{
   transform: scale(1.16); z-index: 6;
   box-shadow: 0 0 0 2px var(--accent), 0 14px 32px -12px rgba(0,0,0,0.65);
@@ -1122,7 +1122,8 @@ img { max-width: 100%; }
 .pdrum-zoom-close:hover{ color: var(--ink); border-color: var(--ink-3); }
 
 @media (max-width: 640px){
-  .pdrum-scene{ height: 420px; }
+  .pdrum-frame{ width: min(100%, 17rem); }
+  .pdrum-scene{ height: 480px; }
   .pdrum-zoom-card{ width: 92vw; }
 }
 @media (prefers-reduced-motion: reduce){
