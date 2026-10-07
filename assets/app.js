@@ -158,3 +158,116 @@
       });
     });
   })();
+
+/* ---- photo drum: rotating 3D photo tower, used in Seen and Made ---- */
+var pdrumZoomOpen = false;
+var pdrumZoomDrum = null;
+var pdrumLastFocus = null;
+
+function openPdrumZoom(im, drum) {
+  var overlay = document.getElementById('pdrumZoom');
+  if (!overlay) { return; }
+  var img = document.getElementById('pdrumZoomImg');
+  var cap = document.getElementById('pdrumZoomCap');
+  pdrumLastFocus = document.activeElement;
+  img.src = im.src; img.alt = im.title; cap.textContent = im.title;
+  overlay.hidden = false;
+  pdrumZoomOpen = true;
+  pdrumZoomDrum = drum || null;
+  if (pdrumZoomDrum) { pdrumZoomDrum.classList.add('is-paused'); }
+  requestAnimationFrame(function () { overlay.classList.add('show'); });
+  document.getElementById('pdrumZoomClose').focus();
+}
+function closePdrumZoom() {
+  var overlay = document.getElementById('pdrumZoom');
+  if (!overlay) { return; }
+  overlay.classList.remove('show');
+  pdrumZoomOpen = false;
+  if (pdrumZoomDrum) { pdrumZoomDrum.classList.remove('is-paused'); pdrumZoomDrum = null; }
+  setTimeout(function () {
+    overlay.hidden = true;
+    document.getElementById('pdrumZoomImg').removeAttribute('src');
+  }, 220);
+  if (pdrumLastFocus && pdrumLastFocus.focus) { pdrumLastFocus.focus(); }
+}
+(function () {
+  var overlay = document.getElementById('pdrumZoom');
+  if (!overlay) { return; }
+  var closeBtn = document.getElementById('pdrumZoomClose');
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) { closePdrumZoom(); } });
+  if (closeBtn) { closeBtn.addEventListener('click', closePdrumZoom); }
+  document.addEventListener('keydown', function (e) {
+    if (!overlay.hidden && e.key === 'Escape') { closePdrumZoom(); }
+  });
+})();
+
+/* builds one drum: containerId is an empty .pdrum-frame element, images is
+   [{src, title, portrait}], direction -1 turns right-to-left, 1 turns left-to-right */
+window.buildPhotoDrum = function (containerId, images, direction) {
+  var container = document.getElementById(containerId);
+  if (!container || !images || !images.length) { return; }
+
+  var scene = document.createElement('div');
+  scene.className = 'pdrum-scene';
+  var drum = document.createElement('div');
+  drum.className = 'pdrum' + (direction < 0 ? ' pdrum--r2l' : '');
+  scene.appendChild(drum);
+  container.appendChild(scene);
+
+  var ROWS = 5;
+  var totalUnits = images.reduce(function (sum, im) { return sum + (im.portrait ? 2 : 1); }, 0);
+  var FACES = Math.max(8, Math.ceil(totalUnits / ROWS) + 1);
+  var radius = 234;
+
+  var queue = images.slice();
+  function refillQueue() { queue = queue.concat(images); }
+  function takeNext(budget) {
+    if (!queue.length) { refillQueue(); }
+    var idx = -1;
+    for (var k = 0; k < queue.length; k++) {
+      if ((queue[k].portrait ? 2 : 1) <= budget) { idx = k; break; }
+    }
+    if (idx === -1) { refillQueue(); idx = 0; }
+    return queue.splice(idx, 1)[0];
+  }
+  function makeTile(im) {
+    var fig = document.createElement('figure');
+    fig.className = 'pdrum-tile';
+    var img = document.createElement('img');
+    img.src = im.src; img.alt = im.title; img.loading = 'lazy';
+    var cap = document.createElement('figcaption');
+    cap.textContent = im.title;
+    fig.appendChild(img); fig.appendChild(cap);
+    return fig;
+  }
+
+  for (var i = 0; i < FACES; i++) {
+    var col = document.createElement('div');
+    col.className = 'pdrum-col';
+    col.style.transform = 'rotateY(' + (i * 360 / FACES) + 'deg) translateZ(' + radius + 'px)';
+    var budget = ROWS;
+    while (budget > 0) {
+      var im = takeNext(budget);
+      var span = im.portrait ? 2 : 1;
+      var t = makeTile(im);
+      t.style.gridRow = 'span ' + span;
+      t.setAttribute('tabindex', '0');
+      t.setAttribute('role', 'button');
+      t.addEventListener('click', (function (im) { return function () { openPdrumZoom(im, drum); }; })(im));
+      t.addEventListener('keydown', (function (im) {
+        return function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPdrumZoom(im, drum); } };
+      })(im));
+      col.appendChild(t);
+      budget -= span;
+    }
+    drum.appendChild(col);
+  }
+
+  drum.addEventListener('pointerover', function (e) {
+    if (e.target.closest('.pdrum-tile')) { drum.classList.add('is-paused'); }
+  });
+  drum.addEventListener('pointerleave', function () {
+    if (pdrumZoomOpen) { return; }
+    drum.classList.remove('is-paused');
+  });
+};
