@@ -1035,7 +1035,14 @@ img { max-width: 100%; }
 .tower-scene::after{ right: 0; background: linear-gradient(to left, var(--ground-2), transparent); }
 .tower-drum{
   position: relative;
-  width: clamp(150px, 16vw, 220px); height: 86%;
+  width: clamp(150px, 16vw, 220px); height: 74%;
+  /* 74%, not some rounder number: the face nearest the viewer sits
+     translateZ(radius) closer to the camera than the drum's own center, and
+     perspective magnifies anything pulled that much closer by roughly
+     1700/(1700-315) =~ 1.23x. Sized at 86% that front face rendered about
+     6% TALLER than the scene itself and got clipped top and bottom by its
+     overflow:hidden — this backs the box down so the magnified result
+     still lands safely inside the window instead of spilling past it. */
   transform-style: preserve-3d;
   /* the turn itself is set inline, frame by frame, by app.js */
 }
