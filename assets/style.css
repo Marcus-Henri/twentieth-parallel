@@ -856,6 +856,29 @@ img { max-width: 100%; }
     padding-top: 1.05rem;
   }
 
+  /* ============ scroll spine — grows as you scroll, boxes each quote in passing, switches sides ============ */
+  #scrollLineWrap{
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+  #scrollLineSvg{ display: block; }
+  #scrollLinePath{
+    fill: none;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    opacity: 0.9;
+  }
+  @media (max-width: 63.9375rem){
+    #scrollLineWrap{ display: none !important; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #scrollLineWrap{ display: none !important; }
+  }
+
   html{ scroll-behavior: smooth; }
   @media (prefers-reduced-motion: reduce){
     *{ animation: none !important; transition: none !important; scroll-behavior: auto !important; }

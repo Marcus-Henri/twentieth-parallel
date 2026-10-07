@@ -324,3 +324,147 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     drum.classList.remove('pd-hovering');
   });
 };
+
+/* ---- scroll spine: a single line that grows as the page is scrolled, drawing a
+   box around each marginal quote as it passes, then switching to the other side
+   of the page and continuing. Desktop-only — below the breakpoint where .main
+   gets its own column there's no margin left for it to run through. ---- */
+(function () {
+  var MIN_WIDTH = 1024; /* matches the 64rem breakpoint where .main gets its own column */
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var wrap = null, svg = null, path = null, grad = null, pathLen = 0;
+  var resizeTimer = null;
+
+  function reducedMotion() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+  function supported() {
+    return window.innerWidth >= MIN_WIDTH && !reducedMotion();
+  }
+
+  function ensureDom() {
+    if (wrap) { return; }
+    wrap = document.createElement('div');
+    wrap.id = 'scrollLineWrap';
+    wrap.setAttribute('aria-hidden', 'true');
+
+    svg = document.createElementNS(SVGNS, 'svg');
+    svg.id = 'scrollLineSvg';
+
+    var defs = document.createElementNS(SVGNS, 'defs');
+    grad = document.createElementNS(SVGNS, 'linearGradient');
+    grad.id = 'scrollLineGrad';
+    grad.setAttribute('gradientUnits', 'userSpaceOnUse');
+    grad.setAttribute('x1', '0'); grad.setAttribute('x2', '0');
+    grad.setAttribute('y1', '0'); grad.setAttribute('y2', '1');
+    ['var(--celadon)', 'var(--brass)', 'var(--seal)'].forEach(function (c, idx) {
+      var stop = document.createElementNS(SVGNS, 'stop');
+      stop.setAttribute('offset', (idx / 2 * 100) + '%');
+      stop.setAttribute('stop-color', c);
+      grad.appendChild(stop);
+    });
+    defs.appendChild(grad);
+    svg.appendChild(defs);
+
+    path = document.createElementNS(SVGNS, 'path');
+    path.id = 'scrollLinePath';
+    path.setAttribute('stroke', 'url(#scrollLineGrad)');
+    svg.appendChild(path);
+
+    wrap.appendChild(svg);
+    document.body.appendChild(wrap);
+  }
+
+  function buildPath() {
+    if (!supported()) { return; }
+    ensureDom();
+    wrap.hidden = false;
+    var main = document.querySelector('.main');
+    if (!main) { return; }
+
+    var mainRect = main.getBoundingClientRect();
+    var scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    var mainLeft = mainRect.left + scrollY;
+    var mainRight = mainRect.right + scrollY;
+    var docHeight = document.documentElement.scrollHeight;
+    var viewportWidth = document.documentElement.clientWidth;
+    var trackOffset = 16;
+    var trackX = { right: mainRight + trackOffset, left: mainLeft - trackOffset };
+    var pad = 10;
+
+    var quotes = Array.prototype.slice.call(document.querySelectorAll('blockquote.marg'));
+    var side = 'right';
+    var d = 'M ' + trackX[side].toFixed(1) + ' 0';
+
+    quotes.forEach(function (q) {
+      var r = q.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) { return; } /* not rendered */
+      var top = r.top + scrollY - pad;
+      var bottom = r.bottom + scrollY + pad;
+      var left = r.left + scrollY - pad;
+      var right = r.right + scrollY + pad;
+      var enterX = side === 'right' ? right : left;
+
+      /* run down the track to the quote, jog in, trace all four sides of the box */
+      d += ' L ' + trackX[side].toFixed(1) + ' ' + top.toFixed(1);
+      d += ' L ' + enterX.toFixed(1) + ' ' + top.toFixed(1);
+      d += ' L ' + right.toFixed(1) + ' ' + top.toFixed(1);
+      d += ' L ' + right.toFixed(1) + ' ' + bottom.toFixed(1);
+      d += ' L ' + left.toFixed(1) + ' ' + bottom.toFixed(1);
+      d += ' L ' + left.toFixed(1) + ' ' + top.toFixed(1);
+      d += ' L ' + enterX.toFixed(1) + ' ' + top.toFixed(1);
+
+      /* exit on the opposite side and pick that track back up */
+      var newSide = side === 'right' ? 'left' : 'right';
+      var exitX = newSide === 'right' ? right : left;
+      d += ' L ' + exitX.toFixed(1) + ' ' + bottom.toFixed(1);
+      d += ' L ' + trackX[newSide].toFixed(1) + ' ' + bottom.toFixed(1);
+      side = newSide;
+    });
+
+    d += ' L ' + trackX[side].toFixed(1) + ' ' + docHeight;
+
+    path.setAttribute('d', d);
+    svg.setAttribute('width', viewportWidth);
+    svg.setAttribute('height', docHeight);
+    wrap.style.height = docHeight + 'px';
+    grad.setAttribute('y2', docHeight);
+
+    pathLen = path.getTotalLength();
+    path.style.strokeDasharray = pathLen;
+    updateProgress();
+  }
+
+  function updateProgress() {
+    if (!path || !pathLen) { return; }
+    var h = document.documentElement;
+    var max = (h.scrollHeight - h.clientHeight) || 1;
+    var frac = Math.min(1, Math.max(0, (h.scrollTop || window.pageYOffset) / max));
+    path.style.strokeDashoffset = pathLen * (1 - frac);
+  }
+
+  var ticking = false;
+  function onScroll() {
+    if (ticking || !supported()) { return; }
+    ticking = true;
+    requestAnimationFrame(function () { updateProgress(); ticking = false; });
+  }
+
+  function onResize() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (supported()) { buildPath(); }
+      else if (wrap) { wrap.hidden = true; }
+    }, 150);
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onResize, { passive: true });
+  window.addEventListener('load', function () {
+    buildPath();
+    /* photos and web fonts can still land late and nudge quote positions —
+       redraw a couple more times to catch that without polling forever */
+    setTimeout(buildPath, 800);
+    setTimeout(buildPath, 2200);
+  });
+})();
