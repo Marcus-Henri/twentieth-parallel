@@ -333,6 +333,9 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   var MIN_WIDTH = 1024; /* matches the 64rem breakpoint where .main gets its own column */
   var SVGNS = 'http://www.w3.org/2000/svg';
   var wrap = null, svg = null, path = null, grad = null, pathLen = 0;
+  var samples = []; /* {len, y} — maps distance along the path to how far down the
+    page it reaches, using a running max so the box each quote gets traced in
+    (which briefly doubles back on itself) still reads as forward progress */
   var resizeTimer = null;
 
   function reducedMotion() {
@@ -432,15 +435,51 @@ window.buildPhotoDrum = function (containerId, images, direction) {
 
     pathLen = path.getTotalLength();
     path.style.strokeDasharray = pathLen;
+
+    /* sample the path so "how much to reveal" can be driven by actual document
+       position rather than a raw length fraction — the box detours around each
+       quote add length without adding much vertical ground, so a plain
+       length-based fraction falls further and further behind scroll position
+       the more quotes it's passed. A running max of y keeps it monotonic
+       through those detours (a box briefly backtracks upward mid-trace). */
+    samples = [];
+    var sampleStep = Math.max(8, pathLen / 800);
+    var runningMaxY = 0;
+    for (var len = 0; len <= pathLen; len += sampleStep) {
+      var pt = path.getPointAtLength(len);
+      runningMaxY = Math.max(runningMaxY, pt.y);
+      samples.push({ len: len, y: runningMaxY });
+    }
+    var lastPt = path.getPointAtLength(pathLen);
+    runningMaxY = Math.max(runningMaxY, lastPt.y);
+    samples.push({ len: pathLen, y: runningMaxY });
+
     updateProgress();
   }
 
+  function lengthForY(targetY) {
+    if (!samples.length) { return 0; }
+    var lo = 0, hi = samples.length - 1;
+    if (targetY <= samples[0].y) { return samples[0].len; }
+    if (targetY >= samples[hi].y) { return samples[hi].len; }
+    while (lo < hi - 1) {
+      var mid = (lo + hi) >> 1;
+      if (samples[mid].y < targetY) { lo = mid; } else { hi = mid; }
+    }
+    var a = samples[lo], b = samples[hi];
+    var t = (b.y - a.y) !== 0 ? (targetY - a.y) / (b.y - a.y) : 0;
+    return a.len + t * (b.len - a.len);
+  }
+
   function updateProgress() {
-    if (!path || !pathLen) { return; }
-    var h = document.documentElement;
-    var max = (h.scrollHeight - h.clientHeight) || 1;
-    var frac = Math.min(1, Math.max(0, (h.scrollTop || window.pageYOffset) / max));
-    path.style.strokeDashoffset = pathLen * (1 - frac);
+    if (!path || !pathLen || !samples.length) { return; }
+    var scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    /* reveal a bit ahead of the very top of the viewport, so a quote's box is
+       finished tracing around the time it's actually being read, not only
+       once it's scrolled fully past */
+    var targetY = scrollY + window.innerHeight * 0.35;
+    var len = lengthForY(targetY);
+    path.style.strokeDashoffset = Math.max(0, pathLen - len);
   }
 
   var ticking = false;
