@@ -197,6 +197,19 @@ function closePdrumZoom() {
   });
 })();
 
+/* the treatment a photo gets each time it comes back around — 1st appearance is
+   plain, then it cycles through these. label is appended to the caption; className
+   is added to the <figure> so CSS (and, for a couple of them, the SVG filters
+   defined in index.html) can style the <img> and lay any overlay on top of it. */
+var PD_STYLES = [
+  { key: 'original', className: '', label: '' },
+  { key: 'impressionist', className: 'pd-style-impressionist', label: 'impressionist pass' },
+  { key: 'pointillist', className: 'pd-style-pointillist', label: 'pointillist pass' },
+  { key: 'fauvist', className: 'pd-style-fauvist', label: 'fauvist pass' },
+  { key: 'woodblock', className: 'pd-style-woodblock', label: 'woodblock pass' },
+  { key: 'manga', className: 'pd-style-manga', label: 'manga pass' }
+];
+
 /* builds one tower: containerId is an empty .pdrum-frame element, images is
    [{src, title, portrait}], direction -1 flips right-to-left, 1 flips left-to-right.
    Only ONE set of photos (2 wide x 5 tall) is ever in the DOM at a time — every few
@@ -228,13 +241,19 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     if (idx === -1) { refillQueue(); idx = 0; }
     return queue.splice(idx, 1)[0];
   }
-  function makeTile(im) {
+  function makeTile(im, styleDef) {
     var fig = document.createElement('figure');
-    fig.className = 'pdrum-tile';
+    fig.className = 'pdrum-tile' + (styleDef.className ? ' ' + styleDef.className : '');
     var img = document.createElement('img');
     img.src = im.src; img.alt = im.title; img.loading = 'lazy';
     var cap = document.createElement('figcaption');
     cap.textContent = im.title;
+    if (styleDef.label) {
+      var tag = document.createElement('span');
+      tag.className = 'pd-style-tag';
+      tag.textContent = ' — ' + styleDef.label;
+      cap.appendChild(tag);
+    }
     fig.appendChild(img); fig.appendChild(cap);
     fig.setAttribute('tabindex', '0');
     fig.setAttribute('role', 'button');
@@ -249,7 +268,11 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     while (budget > 0) {
       var im = takeNext(budget);
       var span = im.portrait ? 2 : 1;
-      var t = makeTile(im);
+      /* each photo remembers how many times it's been dealt, across the whole life
+         of this tower, so its own Nth appearance picks the Nth style in the cycle */
+      im._pdPass = (im._pdPass || 0) + 1;
+      var styleDef = PD_STYLES[(im._pdPass - 1) % PD_STYLES.length];
+      var t = makeTile(im, styleDef);
       t.style.gridRow = 'span ' + span;
       drum.appendChild(t);
       budget -= span;

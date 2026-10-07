@@ -1024,6 +1024,37 @@ img { max-width: 100%; }
   opacity: 0.55; filter: saturate(0.4) brightness(0.72);
 }
 
+/* ---- style rotation: each re-appearance of a photo gets a different treatment ----
+   woodblock and manga run through the SVG filters defined once in index.html;
+   the rest are plain CSS filter combinations. pointillist adds a dot-screen
+   overlay via ::after rather than a filter, since a believable dot pattern isn't
+   one. The !important beats the plain hover saturate() above, so the treatment
+   stays visible even while a tile is popped forward — only the zoom modal (a
+   click away) shows the untouched original. */
+.pd-style-impressionist img{
+  filter: saturate(1.5) contrast(0.88) blur(0.4px) sepia(0.12) hue-rotate(-8deg) !important;
+}
+.pd-style-fauvist img{
+  filter: saturate(2.3) contrast(1.3) hue-rotate(22deg) !important;
+}
+.pd-style-woodblock img{
+  filter: url(#pdFilterWoodblock) contrast(1.3) saturate(1.1) !important;
+}
+.pd-style-manga img{
+  filter: url(#pdFilterManga) contrast(1.4) brightness(1.08) !important;
+}
+.pd-style-pointillist img{
+  filter: saturate(1.3) contrast(0.85) blur(0.3px) !important;
+}
+.pd-style-pointillist::after{
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background-image: radial-gradient(rgba(243,241,233,0.65) 1px, transparent 1.3px);
+  background-size: 4px 4px;
+  mix-blend-mode: overlay;
+  opacity: 0.6;
+}
+.pd-style-tag{ font-style: italic; opacity: 0.8; }
+
 .pdrum-hint{
   margin-top: 0.75rem; font-family: var(--mono); font-size: 0.6875rem;
   letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3);

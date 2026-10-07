@@ -373,7 +373,7 @@
       </div>
       <div class="pdrum-wrap">
         <div class="pdrum-frame" id="seenDrum"></div>
-        <p class="pdrum-hint">Flips right to left every few seconds &mdash; all twenty-three photographs. Hover a picture to pause and bring it forward, click to look closer.</p>
+        <p class="pdrum-hint">Flips right to left every few seconds &mdash; all twenty-three photographs, each cycling through a different treatment on every pass. Hover a picture to pause and bring it forward, click to look closer.</p>
       </div>
       <blockquote class="marg marg--overture">
         <p>They say if you get far enough away, you&rsquo;ll be on your way back home.</p>
@@ -401,7 +401,7 @@
       </div>
       <div class="pdrum-wrap">
         <div class="pdrum-frame" id="madeDrum"></div>
-        <p class="pdrum-hint">Flips left to right every few seconds &mdash; all forty-three pieces. Hover a picture to pause and bring it forward, click to look closer.</p>
+        <p class="pdrum-hint">Flips left to right every few seconds &mdash; all forty-three pieces, each cycling through a different treatment on every pass. Hover a picture to pause and bring it forward, click to look closer.</p>
       </div>
       <blockquote class="marg marg--plaque">
         <p>The cage is invisible because you were born inside it &mdash; and they taught you to love the bars.</p>
@@ -820,6 +820,26 @@
     <button id="lb-next" type="button" aria-label="Next photograph">Next &rarr;</button>
   </div>
 </div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="pdFilterWoodblock" color-interpolation-filters="sRGB">
+      <feComponentTransfer>
+        <feFuncR type="discrete" tableValues="0.06 0.28 0.5 0.72 0.94"></feFuncR>
+        <feFuncG type="discrete" tableValues="0.06 0.28 0.5 0.72 0.94"></feFuncG>
+        <feFuncB type="discrete" tableValues="0.06 0.28 0.5 0.72 0.94"></feFuncB>
+      </feComponentTransfer>
+    </filter>
+    <filter id="pdFilterManga" color-interpolation-filters="sRGB">
+      <feColorMatrix type="saturate" values="0"></feColorMatrix>
+      <feComponentTransfer>
+        <feFuncR type="discrete" tableValues="0.04 0.22 0.42 0.64 0.88 1"></feFuncR>
+        <feFuncG type="discrete" tableValues="0.04 0.22 0.42 0.64 0.88 1"></feFuncG>
+        <feFuncB type="discrete" tableValues="0.04 0.22 0.42 0.64 0.88 1"></feFuncB>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+</svg>
 
 <div class="pdrum-zoom" id="pdrumZoom" hidden>
   <figure class="pdrum-zoom-card">
