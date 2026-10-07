@@ -227,6 +227,14 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   scene.appendChild(drum);
   container.appendChild(scene);
 
+  /* every photo gets its own starting point in the style cycle, staggered by
+     its position in the list. Without this, every photo refills in the same
+     order on every pass, so their pass-counters stay locked in step and the
+     *entire* tower periodically lands on the same treatment at once — a wall
+     of photos all going impressionist (or all going grayscale-ish manga)
+     together, instead of each one showing something different. */
+  images.forEach(function (im, idx) { im._pdOffset = idx % PD_STYLES.length; });
+
   var ROWS = 5, COLS = 2;
   var BUDGET = ROWS * COLS;
 
@@ -269,9 +277,10 @@ window.buildPhotoDrum = function (containerId, images, direction) {
       var im = takeNext(budget);
       var span = im.portrait ? 2 : 1;
       /* each photo remembers how many times it's been dealt, across the whole life
-         of this tower, so its own Nth appearance picks the Nth style in the cycle */
+         of this tower, so its own Nth appearance picks the Nth style in the cycle —
+         offset by its own staggered starting point, so simultaneous tiles differ */
       im._pdPass = (im._pdPass || 0) + 1;
-      var styleDef = PD_STYLES[(im._pdPass - 1) % PD_STYLES.length];
+      var styleDef = PD_STYLES[(im._pdPass - 1 + im._pdOffset) % PD_STYLES.length];
       var t = makeTile(im, styleDef);
       t.style.gridRow = 'span ' + span;
       drum.appendChild(t);
