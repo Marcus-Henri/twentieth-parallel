@@ -159,9 +159,8 @@
     });
   })();
 
-/* ---- photo drum: rotating 3D photo tower, used in Seen and Made ---- */
+/* ---- photo tower: one flipping wall of photos, used in Seen and Made ---- */
 var pdrumZoomOpen = false;
-var pdrumZoomDrum = null;
 var pdrumLastFocus = null;
 
 function openPdrumZoom(im, drum) {
@@ -173,8 +172,6 @@ function openPdrumZoom(im, drum) {
   img.src = im.src; img.alt = im.title; cap.textContent = im.title;
   overlay.hidden = false;
   pdrumZoomOpen = true;
-  pdrumZoomDrum = drum || null;
-  if (pdrumZoomDrum) { pdrumZoomDrum.classList.add('is-paused'); }
   requestAnimationFrame(function () { overlay.classList.add('show'); });
   document.getElementById('pdrumZoomClose').focus();
 }
@@ -183,7 +180,6 @@ function closePdrumZoom() {
   if (!overlay) { return; }
   overlay.classList.remove('show');
   pdrumZoomOpen = false;
-  if (pdrumZoomDrum) { pdrumZoomDrum.classList.remove('is-paused'); pdrumZoomDrum = null; }
   setTimeout(function () {
     overlay.hidden = true;
     document.getElementById('pdrumZoomImg').removeAttribute('src');
@@ -201,8 +197,12 @@ function closePdrumZoom() {
   });
 })();
 
-/* builds one drum: containerId is an empty .pdrum-frame element, images is
-   [{src, title, portrait}], direction -1 turns right-to-left, 1 turns left-to-right */
+/* builds one tower: containerId is an empty .pdrum-frame element, images is
+   [{src, title, portrait}], direction -1 flips right-to-left, 1 flips left-to-right.
+   Only ONE set of photos (2 wide x 5 tall) is ever in the DOM at a time — every few
+   seconds it flips over, face-down, and comes back up showing the next set. That
+   keeps it to a single column of pictures with no second column ever able to bleed
+   into it, and the photos sit flat (no ongoing 3D tilt) so their edges stay crisp. */
 window.buildPhotoDrum = function (containerId, images, direction) {
   var container = document.getElementById(containerId);
   if (!container || !images || !images.length) { return; }
@@ -214,14 +214,8 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   scene.appendChild(drum);
   container.appendChild(scene);
 
-  var ROWS = 5;
-  var totalUnits = images.reduce(function (sum, im) { return sum + (im.portrait ? 2 : 1); }, 0);
-  /* just enough faces to seat every photo once, so the same photo doesn't recur
-     around the drum more than the rounding up to a full face requires */
-  var FACES = Math.max(6, Math.ceil(totalUnits / ROWS));
-  /* radius scaled from the approved 9-face/234px drum, so more faces (more photos)
-     push the cylinder wider instead of crowding the same circle and overlapping */
-  var radius = Math.round(234 * FACES / 9);
+  var ROWS = 5, COLS = 2;
+  var BUDGET = ROWS * COLS;
 
   var queue = images.slice();
   function refillQueue() { queue = queue.concat(images); }
@@ -242,46 +236,57 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     var cap = document.createElement('figcaption');
     cap.textContent = im.title;
     fig.appendChild(img); fig.appendChild(cap);
+    fig.setAttribute('tabindex', '0');
+    fig.setAttribute('role', 'button');
+    fig.addEventListener('click', function () { openPdrumZoom(im, drum); });
+    fig.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPdrumZoom(im, drum); }
+    });
     return fig;
   }
-
-  for (var i = 0; i < FACES; i++) {
-    var col = document.createElement('div');
-    col.className = 'pdrum-col';
-    col.style.transform = 'rotateY(' + (i * 360 / FACES) + 'deg) translateZ(' + radius + 'px)';
-    var budget = ROWS;
+  function fillBatch() {
+    var budget = BUDGET;
     while (budget > 0) {
       var im = takeNext(budget);
       var span = im.portrait ? 2 : 1;
       var t = makeTile(im);
       t.style.gridRow = 'span ' + span;
-      t.setAttribute('tabindex', '0');
-      t.setAttribute('role', 'button');
-      t.addEventListener('click', (function (im) { return function () { openPdrumZoom(im, drum); }; })(im));
-      t.addEventListener('keydown', (function (im) {
-        return function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPdrumZoom(im, drum); } };
-      })(im));
-      col.appendChild(t);
+      drum.appendChild(t);
       budget -= span;
     }
-    drum.appendChild(col);
   }
+  fillBatch();
+
+  var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var paused = false, timer = null, flipping = false;
+
+  function scheduleFlip() {
+    if (reducedMotion) { return; }
+    clearTimeout(timer);
+    timer = setTimeout(flip, 4600);
+  }
+  function flip() {
+    if (paused || pdrumZoomOpen || flipping) { scheduleFlip(); return; }
+    flipping = true;
+    drum.classList.add('pdrum-flip');
+    setTimeout(function () {
+      while (drum.firstChild) { drum.removeChild(drum.firstChild); }
+      fillBatch();
+      drum.classList.add('pdrum-no-anim');
+      drum.classList.remove('pdrum-flip');
+      void drum.offsetWidth; /* force reflow so the next class change transitions */
+      drum.classList.remove('pdrum-no-anim');
+      flipping = false;
+      scheduleFlip();
+    }, 620);
+  }
+  scheduleFlip();
 
   drum.addEventListener('pointerover', function (e) {
-    var tile = e.target.closest('.pdrum-tile');
-    if (!tile) { return; }
-    drum.classList.add('is-paused');
-    /* force the hovered tile's own column to the front of the paint order, so its
-       pop-out scale can never be cut into by a neighboring column's edge */
-    var fronted = drum.querySelectorAll('.pdrum-col--front');
-    for (var i = 0; i < fronted.length; i++) { fronted[i].classList.remove('pdrum-col--front'); }
-    var col = tile.closest('.pdrum-col');
-    if (col) { col.classList.add('pdrum-col--front'); }
+    if (!e.target.closest('.pdrum-tile')) { return; }
+    paused = true;
   });
   drum.addEventListener('pointerleave', function () {
-    if (pdrumZoomOpen) { return; }
-    drum.classList.remove('is-paused');
-    var fronted = drum.querySelectorAll('.pdrum-col--front');
-    for (var i = 0; i < fronted.length; i++) { fronted[i].classList.remove('pdrum-col--front'); }
+    paused = false;
   });
 };
