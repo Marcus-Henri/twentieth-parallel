@@ -514,8 +514,26 @@ window.buildPhotoDrum = function (containerId, images, direction) {
      window 'load', which can fire later than expected */
   buildPath();
   window.addEventListener('load', buildPath);
-  /* photos and web fonts can still land late and nudge the page height —
-     redraw a couple more times to catch that without polling forever */
-  setTimeout(buildPath, 800);
-  setTimeout(buildPath, 2200);
+  /* a fixed delay can't know when the page is actually done growing — a page
+     this image-heavy (two 40+ photo towers, lazy-loaded galleries further
+     down) can still be gaining height well after 'load', and the SVG's own
+     height gets measured too early, clipping everything below that point
+     (the flourish included). Watch the page's actual height and rebuild
+     whenever it changes, instead of guessing how long to wait. */
+  if ('ResizeObserver' in window) {
+    var lastHeight = 0;
+    var ro = new ResizeObserver(function () {
+      var h = document.documentElement.scrollHeight;
+      if (Math.abs(h - lastHeight) > 2) {
+        lastHeight = h;
+        onResize();
+      }
+    });
+    ro.observe(document.body);
+  } else {
+    /* fallback for anything without ResizeObserver */
+    setTimeout(buildPath, 800);
+    setTimeout(buildPath, 2200);
+    setTimeout(buildPath, 5000);
+  }
 })();
