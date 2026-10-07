@@ -217,7 +217,9 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   var ROWS = 5;
   var totalUnits = images.reduce(function (sum, im) { return sum + (im.portrait ? 2 : 1); }, 0);
   var FACES = Math.max(8, Math.ceil(totalUnits / ROWS) + 1);
-  var radius = 234;
+  /* radius scaled from the approved 9-face/234px drum, so more faces (more photos)
+     push the cylinder wider instead of crowding the same circle and overlapping */
+  var radius = Math.round(234 * FACES / 9);
 
   var queue = images.slice();
   function refillQueue() { queue = queue.concat(images); }
