@@ -70,6 +70,7 @@
 
     figs.forEach(function (f, n) {
       var im = f.querySelector('img');
+      if (im.closest('a')) { return; } // image is itself a link out — let it navigate, skip the lightbox
       im.setAttribute('tabindex', '0');
       im.setAttribute('role', 'button');
       im.addEventListener('click', function () { open(n); });

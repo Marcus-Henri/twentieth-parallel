@@ -961,3 +961,17 @@ img { max-width: 100%; }
   .era p.note{ color: var(--ink-2); font-size: 0.9375rem; margin: 0; }
 
 
+
+/* ============ print ============ */
+@media print{
+  :root{ color-scheme: light; }
+  body{ background: #fff; color: #000; }
+  .nav, #progress, #lb, .enquire, .now-cta{ display: none !important; }
+  a{ color: inherit; text-decoration: underline; }
+  .main{ max-width: none; margin: 0; padding: 0 0.5in; }
+  .masthead .portrait img{ max-width: 2in; }
+  img{ max-width: 100%; }
+  .post, .entry, article{ break-inside: avoid-page; }
+  blockquote.marg{ break-inside: avoid-page; }
+  a[href^="http"]::after{ content: " (" attr(href) ")"; font-size: 0.75em; color: #555; }
+}
