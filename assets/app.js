@@ -210,33 +210,42 @@ var PD_STYLES = [
   { key: 'manga', className: 'pd-style-manga', label: 'manga pass' }
 ];
 
-/* builds one tower: containerId is an empty .pdrum-frame element, images is
-   [{src, title, portrait}], direction -1 flips right-to-left, 1 flips left-to-right.
-   A genuine single column, stacked top to bottom — not a wide grid. Every few
-   seconds the whole stack flips over, face-down, and comes back up showing the
-   next set of photos, and the photos sit flat (no ongoing 3D tilt) so their
-   edges stay crisp in between. */
+/* builds ONE gigantic tower: containerId is an empty .pdrum-frame element,
+   images is [{src, title, portrait}] — meant to be the combined Seen + Made
+   collection, all in one structure. direction -1 turns right-to-left, 1 turns
+   left-to-right.
+
+   A real 3D cylinder — columns of photographs mounted around a drum, like a
+   Rolodex or a lazy Susan — not a flat grid pretending to rotate. Rotation is
+   driven from JS (a plain rAF loop advancing an angle) rather than a CSS
+   @keyframes animation, for one reason: it lets this function always know
+   exactly which column is currently on the FAR side of the drum, facing
+   away from the viewer. Every so often it quietly re-deals that one hidden
+   column with its next batch of photographs — each one stepped forward to
+   its next style treatment — so by the time it swings back into view it's
+   showing something different. The swap itself is never visible; only the
+   result of it, arriving a few seconds later, is. */
 window.buildPhotoDrum = function (containerId, images, direction) {
   var container = document.getElementById(containerId);
   if (!container || !images || !images.length) { return; }
 
   var scene = document.createElement('div');
-  scene.className = 'pdrum-scene';
+  scene.className = 'tower-scene';
   var drum = document.createElement('div');
-  drum.className = 'pdrum' + (direction < 0 ? ' pdrum--r2l' : '');
+  drum.className = 'tower-drum';
   scene.appendChild(drum);
   container.appendChild(scene);
 
   /* every photo gets its own starting point in the style cycle, staggered by
-     its position in the list. Without this, every photo refills in the same
-     order on every pass, so their pass-counters stay locked in step and the
-     *entire* tower periodically lands on the same treatment at once — a wall
-     of photos all going impressionist (or all going grayscale-ish manga)
-     together, instead of each one showing something different. */
+     its position in the list, so simultaneous tiles don't all land on the
+     same treatment at the same time */
   images.forEach(function (im, idx) { im._pdOffset = idx % PD_STYLES.length; });
 
-  var ROWS = 5, COLS = 1;
-  var BUDGET = ROWS * COLS;
+  var FACES = 10, ROWS_PER_FACE = 6;
+  var FACE_BUDGET = ROWS_PER_FACE;
+  /* half the face width (clamp(150px,16vw,220px) below), tangent-spaced so
+     neighbouring faces meet edge to edge rather than gapping or overlapping */
+  var radius = Math.round((205 / 2) / Math.tan(Math.PI / FACES));
 
   var queue = images.slice();
   function refillQueue() { queue = queue.concat(images); }
@@ -271,67 +280,83 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     });
     return fig;
   }
-  function fillBatch() {
-    var budget = BUDGET;
+  function fillFace(col) {
+    while (col.firstChild) { col.removeChild(col.firstChild); }
+    var budget = FACE_BUDGET;
     while (budget > 0) {
       var im = takeNext(budget);
       var span = im.portrait ? 2 : 1;
-      /* each photo remembers how many times it's been dealt, across the whole life
-         of this tower, so its own Nth appearance picks the Nth style in the cycle —
-         offset by its own staggered starting point, so simultaneous tiles differ */
+      /* each photo remembers how many times it's been dealt, across the whole
+         life of this tower, so its own Nth appearance picks the Nth style in
+         the cycle — offset by its own staggered starting point */
       im._pdPass = (im._pdPass || 0) + 1;
       var styleDef = PD_STYLES[(im._pdPass - 1 + im._pdOffset) % PD_STYLES.length];
       var t = makeTile(im, styleDef);
       t.style.gridRow = 'span ' + span;
-      drum.appendChild(t);
+      col.appendChild(t);
       budget -= span;
     }
   }
-  fillBatch();
+
+  var cols = [];
+  for (var i = 0; i < FACES; i++) {
+    var col = document.createElement('div');
+    col.className = 'tower-col';
+    col.style.transform = 'rotateY(' + (i * 360 / FACES) + 'deg) translateZ(' + radius + 'px)';
+    col._faceAngle = i * 360 / FACES;
+    fillFace(col);
+    drum.appendChild(col);
+    cols.push(col);
+  }
 
   var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var paused = false, timer = null, flipping = false;
-
-  function scheduleFlip() {
-    if (reducedMotion) { return; }
-    clearTimeout(timer);
-    timer = setTimeout(flip, 4600);
-  }
-  function flip() {
-    if (paused || pdrumZoomOpen || flipping) { scheduleFlip(); return; }
-    flipping = true;
-    drum.classList.add('pdrum-flip');
-    setTimeout(function () {
-      while (drum.firstChild) { drum.removeChild(drum.firstChild); }
-      fillBatch();
-      drum.classList.add('pdrum-no-anim');
-      drum.classList.remove('pdrum-flip');
-      void drum.offsetWidth; /* force reflow so the next class change transitions */
-      drum.classList.remove('pdrum-no-anim');
-      flipping = false;
-      scheduleFlip();
-    }, 620);
-  }
-  scheduleFlip();
+  var paused = false;
 
   drum.addEventListener('pointerover', function (e) {
     if (!e.target.closest('.pdrum-tile')) { return; }
     paused = true;
-    drum.classList.add('pd-hovering');
   });
-  drum.addEventListener('pointerleave', function () {
-    paused = false;
-    drum.classList.remove('pd-hovering');
-  });
+  drum.addEventListener('pointerleave', function () { paused = false; });
   drum.addEventListener('focusin', function (e) {
     if (!e.target.closest('.pdrum-tile')) { return; }
     paused = true;
-    drum.classList.add('pd-hovering');
   });
-  drum.addEventListener('focusout', function () {
-    paused = false;
-    drum.classList.remove('pd-hovering');
-  });
+  drum.addEventListener('focusout', function () { paused = false; });
+
+  if (reducedMotion) { return; } /* static build above is enough */
+
+  /* ---- JS-driven turn, ~58s per revolution, plus the quiet re-deal of
+     whichever single face is currently hidden on the far side ---- */
+  var PERIOD_MS = 58000;
+  var degPerMs = (360 / PERIOD_MS) * (direction < 0 ? 1 : -1);
+  var rotation = 0, lastT = null, nextFaceToRefill = 0, lastRefillCheck = 0;
+
+  function normalize(a) { a = a % 360; return a < 0 ? a + 360 : a; }
+
+  function maybeRefillHiddenFace(now) {
+    if (now - lastRefillCheck < 400) { return; }
+    lastRefillCheck = now;
+    var col = cols[nextFaceToRefill];
+    var effective = normalize(col._faceAngle + rotation);
+    /* the drum's far side — safely out of view behind the near faces */
+    if (effective > 150 && effective < 210) {
+      fillFace(col);
+      nextFaceToRefill = (nextFaceToRefill + 1) % FACES;
+    }
+  }
+
+  function tick(t) {
+    if (lastT === null) { lastT = t; }
+    var dt = t - lastT;
+    lastT = t;
+    if (!paused && !pdrumZoomOpen) {
+      rotation += degPerMs * dt;
+      drum.style.transform = 'rotateY(' + rotation + 'deg)';
+      maybeRefillHiddenFace(t);
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 };
 
 

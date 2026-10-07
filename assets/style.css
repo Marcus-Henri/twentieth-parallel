@@ -1007,35 +1007,43 @@ img { max-width: 100%; }
   .era p.note{ color: var(--ink-2); font-size: 0.9375rem; margin: 0; }
 
 
-/* ============ photo tower: one wide wall of photos that slowly flips to the next set (Seen / Made) ============ */
+/* ============ photo tower: one gigantic 3D drum — Seen and Made combined —
+   columns of photographs mounted around a cylinder, slowly turning. Each
+   face is quietly re-dealt with a fresh batch (and the next style treatment)
+   while it's out of view on the far side, so it arrives back different. ============ */
 .pdrum-wrap{ margin: 1.6rem 0 2.1rem; }
 .pdrum-frame{
   position: relative;
-  width: min(100%, 20rem);
+  width: min(100%, 46rem);
   margin: 0 auto;
 }
-.pdrum-scene{
+.tower-scene{
   position: relative;
   width: 100%;
-  height: clamp(480px, 62vw, 720px);
+  height: clamp(540px, 64vw, 760px);
+  display: flex; align-items: center; justify-content: center;
   perspective: 1700px;
   overflow: hidden;
   border: 1px solid var(--rule);
   background: var(--ground-2);
   border-radius: 2px;
 }
-.pdrum{
-  position: absolute; inset: 0;
-  display: grid; grid-template-columns: repeat(1, 1fr); grid-template-rows: repeat(5, 1fr);
-  gap: 8px; padding: 8px;
-  transform-style: preserve-3d;
-  transform: rotateY(0deg);
-  opacity: 1;
-  transition: transform 0.6s cubic-bezier(.4,0,.2,1), opacity 0.6s ease;
+.tower-scene::before, .tower-scene::after{
+  content: ""; position: absolute; top: 0; bottom: 0; width: 8%; z-index: 3; pointer-events: none;
 }
-.pdrum.pdrum-flip{ transform: rotateY(80deg); opacity: 0; }
-.pdrum.pdrum--r2l.pdrum-flip{ transform: rotateY(-80deg); }
-.pdrum.pdrum-no-anim{ transition: none !important; }
+.tower-scene::before{ left: 0; background: linear-gradient(to right, var(--ground-2), transparent); }
+.tower-scene::after{ right: 0; background: linear-gradient(to left, var(--ground-2), transparent); }
+.tower-drum{
+  position: relative;
+  width: clamp(150px, 16vw, 220px); height: 86%;
+  transform-style: preserve-3d;
+  /* the turn itself is set inline, frame by frame, by app.js */
+}
+.tower-col{
+  position: absolute; inset: 0;
+  display: grid; grid-template-rows: repeat(6, 1fr); gap: 8px;
+  backface-visibility: hidden;
+}
 .pdrum-tile{
   position: relative; margin: 0; overflow: hidden; border-radius: 1px;
   background: var(--ground); width: 100%; cursor: pointer;
@@ -1056,19 +1064,14 @@ img { max-width: 100%; }
   opacity: 0; transform: translateY(4px);
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
-/* a modest lift, sized for this single-column stack — the old 1.5x scale was
-   tuned for the spaced-out 3D drum and, in this tighter column, swallowed the
-   rows above and below it. Dimming its siblings while it's focused keeps the
-   lift reading as deliberate instead of like the photos are colliding. */
-.pdrum-tile:hover, .pdrum-tile:focus-visible{
-  transform: scale(1.16); z-index: 6;
-  box-shadow: 0 0 0 2px var(--accent), 0 14px 32px -12px rgba(0,0,0,0.65);
+/* the drum is spaced out around the cylinder, so a tile can pop forward at
+   full 1.5x scale without swallowing its neighbors above and below. */
+.tower-col .pdrum-tile:hover, .tower-col .pdrum-tile:focus-visible{
+  transform: scale(1.5); z-index: 6;
+  box-shadow: 0 0 0 2px var(--accent), 0 20px 44px -16px rgba(0,0,0,0.6);
 }
-.pdrum-tile:hover img, .pdrum-tile:focus-visible img{ filter: saturate(1.08); }
-.pdrum-tile:hover figcaption, .pdrum-tile:focus-visible figcaption{ opacity: 1; transform: translateY(0); }
-.pdrum.pd-hovering .pdrum-tile:not(:hover):not(:focus-visible){
-  opacity: 0.55; filter: saturate(0.4) brightness(0.72);
-}
+.tower-col .pdrum-tile:hover img, .tower-col .pdrum-tile:focus-visible img{ filter: saturate(1.08); }
+.tower-col .pdrum-tile:hover figcaption, .tower-col .pdrum-tile:focus-visible figcaption{ opacity: 1; transform: translateY(0); }
 
 /* ---- style rotation: each re-appearance of a photo gets a different treatment ----
    woodblock and manga run through the SVG filters defined once in index.html;
@@ -1133,12 +1136,13 @@ img { max-width: 100%; }
 .pdrum-zoom-close:hover{ color: var(--ink); border-color: var(--ink-3); }
 
 @media (max-width: 640px){
-  .pdrum-frame{ width: min(100%, 17rem); }
-  .pdrum-scene{ height: 480px; }
+  .pdrum-frame{ width: 100%; }
+  .tower-scene{ height: 420px; }
+  .tower-drum{ width: clamp(120px, 34vw, 160px); }
   .pdrum-zoom-card{ width: 92vw; }
 }
 @media (prefers-reduced-motion: reduce){
-  .pdrum{ transition: none !important; }
+  .tower-drum{ transition: none !important; }
 }
 
 
