@@ -549,11 +549,14 @@ window.buildPhotoDrum = function (containerId, images, direction) {
 
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onResize, { passive: true });
-  window.addEventListener('load', function () {
-    buildPath();
-    /* photos and web fonts can still land late and nudge quote positions —
-       redraw a couple more times to catch that without polling forever */
-    setTimeout(buildPath, 800);
-    setTimeout(buildPath, 2200);
-  });
+  /* build right away — the content and quotes are already in the DOM by the
+     time this script runs, even if images are still landing — rather than
+     waiting on window 'load', which can fire later than expected (or, in
+     rare cases, before this listener even gets attached) */
+  buildPath();
+  window.addEventListener('load', buildPath);
+  /* photos and web fonts can still land late and nudge quote positions —
+     redraw a couple more times to catch that without polling forever */
+  setTimeout(buildPath, 800);
+  setTimeout(buildPath, 2200);
 })();
