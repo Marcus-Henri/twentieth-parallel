@@ -216,7 +216,9 @@ window.buildPhotoDrum = function (containerId, images, direction) {
 
   var ROWS = 5;
   var totalUnits = images.reduce(function (sum, im) { return sum + (im.portrait ? 2 : 1); }, 0);
-  var FACES = Math.max(8, Math.ceil(totalUnits / ROWS) + 1);
+  /* just enough faces to seat every photo once, so the same photo doesn't recur
+     around the drum more than the rounding up to a full face requires */
+  var FACES = Math.max(6, Math.ceil(totalUnits / ROWS));
   /* radius scaled from the approved 9-face/234px drum, so more faces (more photos)
      push the cylinder wider instead of crowding the same circle and overlapping */
   var radius = Math.round(234 * FACES / 9);
@@ -266,10 +268,20 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   }
 
   drum.addEventListener('pointerover', function (e) {
-    if (e.target.closest('.pdrum-tile')) { drum.classList.add('is-paused'); }
+    var tile = e.target.closest('.pdrum-tile');
+    if (!tile) { return; }
+    drum.classList.add('is-paused');
+    /* force the hovered tile's own column to the front of the paint order, so its
+       pop-out scale can never be cut into by a neighboring column's edge */
+    var fronted = drum.querySelectorAll('.pdrum-col--front');
+    for (var i = 0; i < fronted.length; i++) { fronted[i].classList.remove('pdrum-col--front'); }
+    var col = tile.closest('.pdrum-col');
+    if (col) { col.classList.add('pdrum-col--front'); }
   });
   drum.addEventListener('pointerleave', function () {
     if (pdrumZoomOpen) { return; }
     drum.classList.remove('is-paused');
+    var fronted = drum.querySelectorAll('.pdrum-col--front');
+    for (var i = 0; i < fronted.length; i++) { fronted[i].classList.remove('pdrum-col--front'); }
   });
 };

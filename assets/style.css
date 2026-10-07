@@ -965,6 +965,8 @@ img { max-width: 100%; }
 .pdrum-wrap{ margin: 1.6rem 0 2.1rem; }
 .pdrum-frame{
   position: relative;
+  width: clamp(230px, 28vw, 300px);
+  margin: 0 auto;
   height: clamp(480px, 64vw, 640px);
   border: 1px solid var(--rule);
   background: var(--ground-2);
@@ -972,7 +974,7 @@ img { max-width: 100%; }
   border-radius: 2px;
 }
 .pdrum-frame::before, .pdrum-frame::after{
-  content: ""; position: absolute; top: 0; bottom: 0; width: 8%; z-index: 3; pointer-events: none;
+  content: ""; position: absolute; top: 0; bottom: 0; width: 14%; z-index: 3; pointer-events: none;
 }
 .pdrum-frame::before{ left: 0; background: linear-gradient(to right, var(--ground-2), transparent); }
 .pdrum-frame::after{ right: 0; background: linear-gradient(to left, var(--ground-2), transparent); }
@@ -987,10 +989,11 @@ img { max-width: 100%; }
 .pdrum.pdrum--r2l{ animation-name: pdrum-spin-r2l; }
 .pdrum.is-paused{ animation-play-state: paused; }
 .pdrum-col{
-  position: absolute; inset: 0;
+  position: absolute; inset: 0; z-index: 1;
   display: grid; grid-template-rows: repeat(5, 1fr); gap: 8px;
   backface-visibility: hidden;
 }
+.pdrum-col.pdrum-col--front{ z-index: 20; }
 .pdrum-tile{
   position: relative; margin: 0; overflow: hidden; border-radius: 1px;
   background: var(--ground); width: 100%; cursor: pointer;
