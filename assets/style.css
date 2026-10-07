@@ -496,13 +496,18 @@ img { max-width: 100%; }
   }
   .links li{ border-bottom: 1px solid var(--rule-soft); }
   .links a, .links .pending{
-    display: flex; align-items: baseline; gap: 0.6rem;
+    display: flex; align-items: center; gap: 0.6rem;
     font-family: var(--mono); font-size: 0.8125rem;
     padding-block: 0.6rem; text-decoration: none;
   }
   .links a{ color: var(--ink); }
   .links a:hover{ color: var(--plum); }
   .links .pending{ color: var(--ink-3); }
+  .links svg.link-ico{
+    width: 1.05rem; height: 1.05rem; flex: none;
+    color: var(--ink-3); transition: color 0.2s ease;
+  }
+  .links a:hover svg.link-ico{ color: var(--plum); }
   .links b{
     font-weight: 500; font-size: 0.625rem;
     letter-spacing: 0.16em; text-transform: uppercase;
