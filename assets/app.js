@@ -285,8 +285,19 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   drum.addEventListener('pointerover', function (e) {
     if (!e.target.closest('.pdrum-tile')) { return; }
     paused = true;
+    drum.classList.add('pd-hovering');
   });
   drum.addEventListener('pointerleave', function () {
     paused = false;
+    drum.classList.remove('pd-hovering');
+  });
+  drum.addEventListener('focusin', function (e) {
+    if (!e.target.closest('.pdrum-tile')) { return; }
+    paused = true;
+    drum.classList.add('pd-hovering');
+  });
+  drum.addEventListener('focusout', function () {
+    paused = false;
+    drum.classList.remove('pd-hovering');
   });
 };

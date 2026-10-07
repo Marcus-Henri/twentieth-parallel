@@ -994,7 +994,8 @@ img { max-width: 100%; }
   position: relative; margin: 0; overflow: hidden; border-radius: 1px;
   background: var(--ground); width: 100%; cursor: pointer;
   box-shadow: 0 1px 0 rgba(0,0,0,0.05);
-  transition: transform 0.25s cubic-bezier(.2,.8,.3,1.3), box-shadow 0.25s ease;
+  transition: transform 0.25s cubic-bezier(.2,.8,.3,1.3), box-shadow 0.25s ease,
+              opacity 0.25s ease, filter 0.25s ease;
 }
 .pdrum-tile img{
   display: block; width: 100%; height: 100%; object-fit: cover;
@@ -1009,12 +1010,19 @@ img { max-width: 100%; }
   opacity: 0; transform: translateY(4px);
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
+/* a modest lift, sized for this tight 2-up grid — the old 1.5x scale was tuned for
+   the spaced-out 3D drum and, in this denser layout, swallowed the rows above and
+   below it. Dimming its siblings while it's focused keeps the lift reading as
+   deliberate instead of like the photos are colliding. */
 .pdrum-tile:hover, .pdrum-tile:focus-visible{
-  transform: scale(1.5); z-index: 6;
-  box-shadow: 0 0 0 2px var(--accent), 0 20px 44px -16px rgba(0,0,0,0.6);
+  transform: scale(1.16); z-index: 6;
+  box-shadow: 0 0 0 2px var(--accent), 0 14px 32px -12px rgba(0,0,0,0.65);
 }
 .pdrum-tile:hover img, .pdrum-tile:focus-visible img{ filter: saturate(1.08); }
 .pdrum-tile:hover figcaption, .pdrum-tile:focus-visible figcaption{ opacity: 1; transform: translateY(0); }
+.pdrum.pd-hovering .pdrum-tile:not(:hover):not(:focus-visible){
+  opacity: 0.55; filter: saturate(0.4) brightness(0.72);
+}
 
 .pdrum-hint{
   margin-top: 0.75rem; font-family: var(--mono); font-size: 0.6875rem;
