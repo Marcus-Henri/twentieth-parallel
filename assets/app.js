@@ -335,17 +335,17 @@ window.buildPhotoDrum = function (containerId, images, direction) {
 };
 
 
-/* ---- scroll spine: two parallel lines that start apart, converge to a point,
-   then run down the page as one line — splitting back into a parallel pair to
-   frame the top and bottom of each marginal quote as it passes, then merging
-   again and switching to the other side. ("Two parallel lines" — the 20th
-   Parallel — that's the joke.) Starts as a plain dark line; color is a later
-   pass. Desktop-only — below the breakpoint where .main gets its own column
-   there's no margin left for it to run through. ---- */
+
+/* ---- scroll spine: two parallel lines start apart near the top, converge to
+   a point, then run straight down the right margin as one line as you scroll
+   — ending in a small flourish once you reach the bottom. Deliberately simple:
+   an earlier version tried to split the line around every quote and ended up
+   cutting across body text instead. Desktop-only — below the breakpoint where
+   .main gets its own column there's no margin left for it to run through. ---- */
 (function () {
   var MIN_WIDTH = 1024; /* matches the 64rem breakpoint where .main gets its own column */
   var SVGNS = 'http://www.w3.org/2000/svg';
-  var SPLIT = 3.5; /* gap between the two strokes wherever the line splits */
+  var SPLIT = 3.5; /* gap between the two strokes where the line starts, before it converges */
   var wrap = null, svg = null, pathA = null, pathB = null, arrow = null;
   var lenA = 0, lenB = 0, samples = [];
   var resizeTimer = null;
@@ -397,87 +397,49 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     var mainLeft = mainRect.left + scrollY;
     var mainRight = mainRect.right + scrollY;
     var docHeight = document.documentElement.scrollHeight;
-    var viewportWidth = document.documentElement.clientWidth;
     var trackOffset = 16;
-    var trackX = { right: mainRight + trackOffset, left: mainLeft - trackOffset };
-    var pad = 10;
+    var trackX = mainRight + trackOffset;
 
     /* ---- two lines start apart, side by side, and converge to a single
-       point near the top right, where they carry on as one ---- */
+       point near the top right, where they carry on as one, straight down
+       the right margin, all the way to the bottom ---- */
     var convergeY = Math.max(30, mainRect.top + scrollY + 18);
     var dA = 'M ' + f(mainLeft) + ' ' + f(convergeY - SPLIT);
     var dB = 'M ' + f(mainLeft) + ' ' + f(convergeY + SPLIT);
-    dA += ' L ' + f(trackX.right) + ' ' + f(convergeY - SPLIT);
-    dB += ' L ' + f(trackX.right) + ' ' + f(convergeY + SPLIT);
-    dA += ' L ' + f(trackX.right) + ' ' + f(convergeY);
-    dB += ' L ' + f(trackX.right) + ' ' + f(convergeY);
-    /* merged from here down */
+    dA += ' L ' + f(trackX) + ' ' + f(convergeY - SPLIT);
+    dB += ' L ' + f(trackX) + ' ' + f(convergeY + SPLIT);
+    dA += ' L ' + f(trackX) + ' ' + f(convergeY);
+    dB += ' L ' + f(trackX) + ' ' + f(convergeY);
+    /* merged from here: straight down, nothing to detour around */
+    dA += ' L ' + f(trackX) + ' ' + f(docHeight);
+    dB += ' L ' + f(trackX) + ' ' + f(docHeight);
 
-    var side = 'right';
-
-    function mergedTo(x, y) {
-      var seg = ' L ' + f(x) + ' ' + f(y);
-      dA += seg; dB += seg;
-    }
-
-    var quotes = Array.prototype.slice.call(document.querySelectorAll('blockquote.marg'));
-
-    quotes.forEach(function (q) {
-      var r = q.getBoundingClientRect();
-      if (r.width === 0 && r.height === 0) { return; } /* not rendered */
-      var top = r.top + scrollY - pad;
-      var bottom = r.bottom + scrollY + pad;
-      var left = r.left + scrollY - pad;
-      var right = r.right + scrollY + pad;
-      var enterX = side === 'right' ? right : left;
-      var otherX = side === 'right' ? left : right;
-
-      /* merged: run the track down to the quote and jog onto its near edge */
-      mergedTo(trackX[side], top);
-      mergedTo(enterX, top);
-
-      /* split: the top edge, traced as two parallel strokes */
-      dA += ' L ' + f(enterX) + ' ' + f(top - SPLIT) + ' L ' + f(otherX) + ' ' + f(top - SPLIT);
-      dB += ' L ' + f(enterX) + ' ' + f(top + SPLIT) + ' L ' + f(otherX) + ' ' + f(top + SPLIT);
-      dA += ' L ' + f(otherX) + ' ' + f(top);
-      dB += ' L ' + f(otherX) + ' ' + f(top);
-      /* merged again: down the far side of the box */
-      mergedTo(otherX, bottom);
-
-      /* split: the bottom edge, traced as two parallel strokes */
-      dA += ' L ' + f(otherX) + ' ' + f(bottom - SPLIT) + ' L ' + f(enterX) + ' ' + f(bottom - SPLIT);
-      dB += ' L ' + f(otherX) + ' ' + f(bottom + SPLIT) + ' L ' + f(enterX) + ' ' + f(bottom + SPLIT);
-      dA += ' L ' + f(enterX) + ' ' + f(bottom);
-      dB += ' L ' + f(enterX) + ' ' + f(bottom);
-
-      /* merged: back out to the track, switch sides, carry on */
-      mergedTo(trackX[side], bottom);
-      var newSide = side === 'right' ? 'left' : 'right';
-      mergedTo(trackX[newSide], bottom);
-      side = newSide;
-    });
-
-    mergedTo(trackX[side], docHeight);
+    /* ---- a small hand-drawn-ish flourish once it reaches the very bottom,
+       so the line visibly comes to an end rather than just trailing off ---- */
+    var fx = trackX, fy = docHeight;
+    var flourish =
+      ' C ' + f(fx - 2) + ' ' + f(fy + 22) + ' ' + f(fx - 34) + ' ' + f(fy + 18) + ' ' + f(fx - 30) + ' ' + f(fy + 42) +
+      ' C ' + f(fx - 27) + ' ' + f(fy + 60) + ' ' + f(fx - 2) + ' ' + f(fy + 60) + ' ' + f(fx - 8) + ' ' + f(fy + 40) +
+      ' C ' + f(fx - 12) + ' ' + f(fy + 26) + ' ' + f(fx - 24) + ' ' + f(fy + 30) + ' ' + f(fx - 22) + ' ' + f(fy + 44);
+    dA += flourish;
+    dB += flourish;
 
     pathA.setAttribute('d', dA);
     pathB.setAttribute('d', dB);
-    svg.setAttribute('width', viewportWidth);
-    svg.setAttribute('height', docHeight);
-    wrap.style.height = docHeight + 'px';
+    var svgHeight = docHeight + 70;
+    svg.setAttribute('width', document.documentElement.clientWidth);
+    svg.setAttribute('height', svgHeight);
+    wrap.style.height = svgHeight + 'px';
 
     lenA = pathA.getTotalLength();
     lenB = pathB.getTotalLength();
     pathA.style.strokeDasharray = lenA;
     pathB.style.strokeDasharray = lenB;
 
-    /* sample line A (close enough to the centerline throughout) so "how much
-       to reveal" can be driven by actual document position rather than a raw
-       length fraction — the split sections add length without adding much
-       vertical ground, and a plain length fraction would drift further and
-       further behind scroll position with every quote it's passed. A running
-       max of y keeps it monotonic through the brief backtracks in each box. */
+    /* sample line A so "how much to reveal" can be driven by actual document
+       position rather than a raw length fraction */
     samples = [];
-    var sampleStep = Math.max(8, lenA / 800);
+    var sampleStep = Math.max(8, lenA / 400);
     var runningMaxY = 0;
     for (var len = 0; len <= lenA; len += sampleStep) {
       var pt = pathA.getPointAtLength(len);
@@ -508,10 +470,9 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   function updateProgress() {
     if (!pathA || !lenA || !samples.length) { return; }
     var scrollY = window.pageYOffset || document.documentElement.scrollTop;
-    /* reveal a bit ahead of the very top of the viewport, so a quote's box is
-       finished tracing around the time it's actually being read, not only
-       once it's scrolled fully past */
-    var targetY = scrollY + window.innerHeight * 0.35;
+    var h = document.documentElement;
+    var atBottom = (scrollY + window.innerHeight) >= (h.scrollHeight - 2);
+    var targetY = atBottom ? Infinity : scrollY + window.innerHeight * 0.35;
     var revealA = Math.min(lenA, lengthForY(targetY));
     var fracDone = lenA ? revealA / lenA : 0;
     var revealB = lenB * fracDone;
@@ -519,7 +480,6 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     pathA.style.strokeDashoffset = Math.max(0, lenA - revealA);
     pathB.style.strokeDashoffset = Math.max(0, lenB - revealB);
 
-    /* arrowhead rides the growing tip of line A, pointed the way it's heading */
     if (arrow && revealA > 0) {
       var tipLen = Math.min(lenA, revealA);
       var p2 = pathA.getPointAtLength(tipLen);
@@ -549,13 +509,12 @@ window.buildPhotoDrum = function (containerId, images, direction) {
 
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onResize, { passive: true });
-  /* build right away — the content and quotes are already in the DOM by the
-     time this script runs, even if images are still landing — rather than
-     waiting on window 'load', which can fire later than expected (or, in
-     rare cases, before this listener even gets attached) */
+  /* build right away — the content is already in the DOM by the time this
+     script runs, even if images are still landing — rather than waiting on
+     window 'load', which can fire later than expected */
   buildPath();
   window.addEventListener('load', buildPath);
-  /* photos and web fonts can still land late and nudge quote positions —
+  /* photos and web fonts can still land late and nudge the page height —
      redraw a couple more times to catch that without polling forever */
   setTimeout(buildPath, 800);
   setTimeout(buildPath, 2200);
