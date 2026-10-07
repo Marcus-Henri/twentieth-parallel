@@ -520,20 +520,30 @@ window.buildPhotoDrum = function (containerId, images, direction) {
      height gets measured too early, clipping everything below that point
      (the flourish included). Watch the page's actual height and rebuild
      whenever it changes, instead of guessing how long to wait. */
-  if ('ResizeObserver' in window) {
-    var lastHeight = 0;
-    var ro = new ResizeObserver(function () {
-      var h = document.documentElement.scrollHeight;
-      if (Math.abs(h - lastHeight) > 2) {
-        lastHeight = h;
-        onResize();
-      }
-    });
-    ro.observe(document.body);
-  } else {
-    /* fallback for anything without ResizeObserver */
-    setTimeout(buildPath, 800);
-    setTimeout(buildPath, 2200);
-    setTimeout(buildPath, 5000);
+  var lastHeight = document.documentElement.scrollHeight;
+  function rebuildIfTaller() {
+    var h = document.documentElement.scrollHeight;
+    if (Math.abs(h - lastHeight) > 2) {
+      lastHeight = h;
+      buildPath();
+    }
   }
+  if ('ResizeObserver' in window) {
+    var ro = new ResizeObserver(rebuildIfTaller);
+    ro.observe(document.body);
+    ro.observe(document.documentElement);
+  }
+  /* belt and suspenders: the observers above can miss a height change when
+     lazy images already reserve their final space via width/height attributes
+     (no box resize to observe) — poll for a few seconds after load too, since
+     a page this image-heavy can keep settling after 'load' fires. Stops
+     itself once the height has held steady for a couple of checks. */
+  var stableChecks = 0;
+  var poll = setInterval(function () {
+    var before = lastHeight;
+    rebuildIfTaller();
+    stableChecks = (lastHeight === before) ? stableChecks + 1 : 0;
+    if (stableChecks >= 3) { clearInterval(poll); }
+  }, 1000);
+  setTimeout(function () { clearInterval(poll); }, 20000);
 })();
