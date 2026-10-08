@@ -1392,6 +1392,15 @@ a.pulse--card:hover .pulse-title{ color: var(--accent); }
 .pitch-cta{ display: inline-block; margin-top: 0.55rem; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--seal); text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 1px; }
 .pitch-cta:hover{ color: var(--accent); }
 .now-item a.pulse--now{ margin: 1rem 0 0.75rem; max-width: 34rem; }
+
+/* recommendations */
+.recs{ display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; max-width: 60rem; }
+@media (min-width: 48rem){ .recs{ grid-template-columns: 1fr 1fr; } }
+.rec{ margin: 0; padding: 1.1rem 1.25rem; border: 1px solid var(--rule); border-top: 3px solid var(--accent); background: var(--ground-tint); }
+.rec p{ margin: 0 0 0.9rem; font-style: italic; color: var(--ink); line-height: 1.55; }
+.rec footer b{ display: block; font-family: var(--display); font-weight: 500; font-size: 0.98rem; }
+.rec footer span{ display: block; font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.04em; color: var(--ink-3); margin-top: 0.2rem; }
+.recs-more{ margin: 1.25rem 0 0; font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
 /* ============ print ============ */
 @media print{
   :root{ color-scheme: light; }
