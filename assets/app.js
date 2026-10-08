@@ -241,11 +241,14 @@ window.buildPhotoDrum = function (containerId, images, direction) {
      same treatment at the same time */
   images.forEach(function (im, idx) { im._pdOffset = idx % PD_STYLES.length; });
 
-  var FACES = 10, ROWS_PER_FACE = 6;
+  /* FACES/radius match the reference tower exactly (9 faces, radius 234) --
+     that's what gives it two columns facing you at once and the spacing Mark
+     prefers, rather than the single dominant wedge a bigger radius produces.
+     ROWS_PER_FACE is doubled from the reference's 5 to make this one
+     substantially taller, without stretching individual tiles. */
+  var FACES = 9, ROWS_PER_FACE = 10;
   var FACE_BUDGET = ROWS_PER_FACE;
-  /* half the face width (clamp(150px,16vw,220px) below), tangent-spaced so
-     neighbouring faces meet edge to edge rather than gapping or overlapping */
-  var radius = Math.round((205 / 2) / Math.tan(Math.PI / FACES));
+  var radius = 234;
 
   var queue = images.slice();
   function refillQueue() { queue = queue.concat(images); }
@@ -325,10 +328,11 @@ window.buildPhotoDrum = function (containerId, images, direction) {
 
   if (reducedMotion) { return; } /* static build above is enough */
 
-  /* ---- JS-driven turn, ~58s per revolution, plus the quiet re-deal of
-     whichever single face is currently hidden on the far side ---- */
-  var PERIOD_MS = 58000;
-  var degPerMs = (360 / PERIOD_MS) * (direction < 0 ? 1 : -1);
+  /* ---- JS-driven turn, 46s per revolution (same speed as the reference),
+     turning the same direction it does (rotateY decreasing), plus the quiet
+     re-deal of whichever single face is currently hidden on the far side ---- */
+  var PERIOD_MS = 46000;
+  var degPerMs = (360 / PERIOD_MS) * (direction < 0 ? -1 : 1);
   var rotation = 0, lastT = null, nextFaceToRefill = 0, lastRefillCheck = 0;
 
   function normalize(a) { a = a % 360; return a < 0 ? a + 360 : a; }

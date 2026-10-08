@@ -1020,7 +1020,10 @@ img { max-width: 100%; }
 .tower-scene{
   position: relative;
   width: 100%;
-  height: clamp(540px, 64vw, 760px);
+  /* roughly double the reference's clamp(480px,64vw,640px) — twice the rows
+     (10 instead of 5) at the same per-row size, substantially taller rather
+     than the same tower with its tiles stretched */
+  height: clamp(960px, 128vw, 1280px);
   display: flex; align-items: center; justify-content: center;
   perspective: 1700px;
   overflow: hidden;
@@ -1035,20 +1038,20 @@ img { max-width: 100%; }
 .tower-scene::after{ right: 0; background: linear-gradient(to left, var(--ground-2), transparent); }
 .tower-drum{
   position: relative;
-  width: clamp(150px, 16vw, 220px); height: 74%;
-  /* 74%, not some rounder number: the face nearest the viewer sits
-     translateZ(radius) closer to the camera than the drum's own center, and
-     perspective magnifies anything pulled that much closer by roughly
-     1700/(1700-315) =~ 1.23x. Sized at 86% that front face rendered about
-     6% TALLER than the scene itself and got clipped top and bottom by its
-     overflow:hidden — this backs the box down so the magnified result
-     still lands safely inside the window instead of spilling past it. */
+  /* width matches the reference tower exactly — this is the "spacing" Mark
+     prefers, from 9 faces at radius 234 rather than 10 faces at a wider one */
+  width: clamp(143px, 17vw, 208px); height: 78%;
+  /* 78%, same as the reference: the face nearest the viewer sits
+     translateZ(radius) closer to the camera, and perspective magnifies
+     anything pulled that close by roughly 1700/(1700-234) =~ 1.16x. At 78%
+     that front face lands at about 90% of the scene's height — comfortably
+     inside the window instead of spilling past its overflow:hidden edge. */
   transform-style: preserve-3d;
   /* the turn itself is set inline, frame by frame, by app.js */
 }
 .tower-col{
   position: absolute; inset: 0;
-  display: grid; grid-template-rows: repeat(6, 1fr); gap: 8px;
+  display: grid; grid-template-rows: repeat(10, 1fr); gap: 8px;
   backface-visibility: hidden;
 }
 .pdrum-tile{
@@ -1146,8 +1149,8 @@ img { max-width: 100%; }
 
 @media (max-width: 640px){
   .pdrum-frame{ width: 100%; }
-  .tower-scene{ height: 420px; }
-  .tower-drum{ width: clamp(120px, 34vw, 160px); }
+  .tower-scene{ height: 840px; }
+  .tower-drum{ width: clamp(115px, 34vw, 165px); }
   .pdrum-zoom-card{ width: 92vw; }
 }
 @media (prefers-reduced-motion: reduce){
