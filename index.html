@@ -49,10 +49,8 @@
         </ul>
 
     <div class="tet" id="tetris">
-      <button class="tet-toggle" id="tetToggle" type="button" aria-expanded="false" aria-controls="tetPanel">
-        <span class="arcade-toggle-dot" aria-hidden="true"></span>A little Tetris
-      </button>
-      <div class="tet-panel" id="tetPanel" hidden>
+      <p class="tet-label"><span class="arcade-toggle-dot" aria-hidden="true"></span>A little Tetris</p>
+      <div class="tet-panel" id="tetPanel">
         <div class="tet-play">
           <canvas id="tetCanvas" width="240" height="480" tabindex="0" aria-label="Tetris: click the board to play, then use the arrow keys to move and turn, space to drop, P to pause"></canvas>
           <div class="tet-side">
@@ -119,6 +117,7 @@
           the EU, for high-growth companies pursuing U.S. capital-markets pathways — working directly with
           C-suite leadership, boards and institutional stakeholders through the regulatory and governance
           questions that come with it.</p>
+          <p class="now-link">Latest writing: <a href="https://www.linkedin.com/pulse/you-dont-need-unicorn-list-nasdaq-mark-henry-saft--g6r3c/" target="_blank" rel="noopener">You Don&rsquo;t Need to Be a Unicorn to List on Nasdaq</a> &rarr;</p>
         </div>
       <blockquote class="marg marg--right">
         <p>Over the long term, the future is decided by optimists.</p>
@@ -289,19 +288,16 @@
           <p class="org">Axion Ventures / HotPlay (TSXV-listed) · Bangkok</p>
           <ul>
             <li>Closed three M&amp;A deals above $25M.</li>
-            <li>Managed global IP licensing across 60+ countries and built institutional and family-office networks.</li>
+            <li>Managed global IP licensing for two video game studios and several AAA titles across 60+ countries and built institutional and family-office networks.</li>
           </ul>
         </article>
 
         <div class="arcade" id="pongArcade">
-          <button class="arcade-toggle" id="pongToggle" type="button" aria-expanded="false" aria-controls="pongPanel">
-            <span class="arcade-toggle-dot" aria-hidden="true"></span>
-            A mini Pong table hides here, left over from the gaming years &mdash; play, if you'd like a break from the r&eacute;sum&eacute;.
-          </button>
-          <div class="arcade-panel" id="pongPanel" hidden>
+          <p class="arcade-lede"><span class="arcade-toggle-dot" aria-hidden="true"></span>Left over from the gaming years: a little Pong table. Click it to serve, and play the left paddle against the house.</p>
+          <div class="arcade-panel" id="pongPanel">
             <div class="arcade-stage">
               <div class="arcade-table">
-                <canvas id="pongCanvas" width="700" height="400" aria-label="Pong game: use arrow keys, W and S, or drag on the table to move your paddle"></canvas>
+                <canvas id="pongCanvas" width="700" height="400" tabindex="0" aria-label="Pong game: use arrow keys, W and S, or drag on the table to move your paddle"></canvas>
                 <div class="arcade-hud" aria-hidden="true">
                   <div class="arcade-score"><span id="pongScoreYou">0</span><b>you</b></div>
                   <div class="arcade-score"><span id="pongScoreCpu">0</span><b>house</b></div>
@@ -315,7 +311,7 @@
                   </div>
                 </div>
               </div>
-              <p class="arcade-msg" id="pongMsg" aria-live="polite">Click, tap, or press any key to serve &middot; move with &uarr; &darr; or W S, or drag.</p>
+              <p class="arcade-msg" id="pongMsg" aria-live="polite">Click the table to serve &middot; move with &uarr; &darr; or W S, or drag.</p>
               <div class="arcade-tools">
                 <button type="button" class="arcade-tool" id="pongSound" aria-pressed="true">Sound on</button>
                 <button type="button" class="arcade-tool" id="pongSpeed">Speed: normal</button>
@@ -577,6 +573,11 @@
           the CV makes it sound.
         </p>
       </div>
+      <aside class="pulse" aria-label="Also published on LinkedIn">
+        <p class="pulse-kicker">Also on LinkedIn &middot; October 2026</p>
+        <h3><a href="https://www.linkedin.com/pulse/you-dont-need-unicorn-list-nasdaq-mark-henry-saft--g6r3c/" target="_blank" rel="noopener">You Don&rsquo;t Need to Be a Unicorn to List on Nasdaq</a></h3>
+        <p>On the idea that a Nasdaq listing is not reserved for unicorns. Written from my work with GCAP Capital and published on LinkedIn.</p>
+      </aside>
 
       <blockquote class="marg marg--plaque">
         <p>I have always imagined that Paradise will be a kind of library.</p>
@@ -881,19 +882,21 @@
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <filter id="pdFilterWoodblock" color-interpolation-filters="sRGB">
-      <feComponentTransfer>
-        <feFuncR type="discrete" tableValues="0.06 0.28 0.5 0.72 0.94"></feFuncR>
-        <feFuncG type="discrete" tableValues="0.06 0.28 0.5 0.72 0.94"></feFuncG>
-        <feFuncB type="discrete" tableValues="0.06 0.28 0.5 0.72 0.94"></feFuncB>
+    <filter id="pdFilterVanGogh" x="-3%" y="-3%" width="106%" height="106%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03 0.055" numOctaves="2" seed="11" result="swirl"></feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="swirl" scale="15" xChannelSelector="R" yChannelSelector="G" result="painted"></feDisplacementMap>
+      <feComponentTransfer in="painted">
+        <feFuncR type="discrete" tableValues="0.05 0.18 0.31 0.44 0.57 0.7 0.83 0.96"></feFuncR>
+        <feFuncG type="discrete" tableValues="0.05 0.18 0.31 0.44 0.57 0.7 0.83 0.96"></feFuncG>
+        <feFuncB type="discrete" tableValues="0.05 0.18 0.31 0.44 0.57 0.7 0.83 0.96"></feFuncB>
       </feComponentTransfer>
     </filter>
-    <filter id="pdFilterManga" color-interpolation-filters="sRGB">
-      <feColorMatrix type="saturate" values="0"></feColorMatrix>
+    <filter id="pdFilterBasquiat" color-interpolation-filters="sRGB">
+      <feColorMatrix type="saturate" values="2.4"></feColorMatrix>
       <feComponentTransfer>
-        <feFuncR type="discrete" tableValues="0.04 0.22 0.42 0.64 0.88 1"></feFuncR>
-        <feFuncG type="discrete" tableValues="0.04 0.22 0.42 0.64 0.88 1"></feFuncG>
-        <feFuncB type="discrete" tableValues="0.04 0.22 0.42 0.64 0.88 1"></feFuncB>
+        <feFuncR type="discrete" tableValues="0.04 0.4 0.72 1"></feFuncR>
+        <feFuncG type="discrete" tableValues="0.04 0.4 0.72 1"></feFuncG>
+        <feFuncB type="discrete" tableValues="0.04 0.4 0.72 1"></feFuncB>
       </feComponentTransfer>
     </filter>
   </defs>
@@ -908,7 +911,7 @@
 
 <script src="assets/app.js"></script>
 <script>
-  buildPhotoDrum('photoTower', [{"src":"images/guardian-lions-and-the-wihan.jpg","title":"Guardian lions and the wihan","portrait":false},{"src":"images/aft-a-mark-of-sorts.jpg","title":"$AFT — a mark, of sorts","portrait":false},{"src":"images/carved-column-guardian.jpg","title":"Carved column guardian","portrait":true},{"src":"images/ex-libris-geometric-variant.jpg","title":"Ex Libris, geometric variant","portrait":false},{"src":"images/fleur-de-lis-after-new-orleans.jpg","title":"Fleur-de-lis, after New Orleans","portrait":true},{"src":"images/carved-rosettes-indigo-wall.jpg","title":"Carved rosettes, indigo wall","portrait":false},{"src":"images/star-tile-with-dragon.jpg","title":"Star tile with dragon","portrait":false},{"src":"images/dragon-and-orb.jpg","title":"Dragon and orb","portrait":false},{"src":"images/singha-before-the-rain.jpg","title":"Singha before the rain","portrait":false},{"src":"images/blue-cosmos.jpg","title":"Blue cosmos","portrait":false},{"src":"images/lilies-after-monet.jpg","title":"Lilies, after Monet","portrait":false},{"src":"images/all-in-white.jpg","title":"All in white","portrait":true},{"src":"images/irises-in-a-fleur-de-lis-vase.jpg","title":"Irises in a fleur-de-lis vase","portrait":false},{"src":"images/guardian-lion-carved-panel.jpg","title":"Guardian lion, carved panel","portrait":true},{"src":"images/naga-scales-glazed-ceramic.jpg","title":"Naga scales, glazed ceramic","portrait":false},{"src":"images/wyatt-earp-set-as-a-broadside.jpg","title":"Wyatt Earp, set as a broadside","portrait":true},{"src":"images/heinlein-set-as-a-broadside.jpg","title":"Heinlein, set as a broadside","portrait":true},{"src":"images/lanterns-and-cordyline.jpg","title":"Lanterns and cordyline","portrait":false},{"src":"images/chichi.jpg","title":"ChiChi, out of the sun","portrait":false},{"src":"images/malibu.jpg","title":"Malibu, above the bay","portrait":false},{"src":"images/bronze-buddha-gilded-halo.jpg","title":"Bronze Buddha, gilded halo","portrait":true},{"src":"images/portrait-with-porthole.jpg","title":"Portrait, with porthole","portrait":false},{"src":"images/lanna-roofs-at-midday.jpg","title":"Lanna roofs at midday","portrait":false},{"src":"images/fleur-de-lis-blue-and-gold.jpg","title":"Fleur-de-lis in blue and gold","portrait":false},{"src":"images/gold-leaf-on-blue.jpg","title":"Gold leaf on blue","portrait":true},{"src":"images/gong-and-striker.jpg","title":"Gong and striker","portrait":false},{"src":"images/circles-and-triangles.jpg","title":"Circles and triangles","portrait":false},{"src":"images/blue-horses-after-franz-marc.jpg","title":"Blue horses, after Franz Marc","portrait":false},{"src":"images/inside-the-blue-wihan.jpg","title":"Inside the blue wihan","portrait":true},{"src":"images/blue-horses-ii-after-franz-marc.jpg","title":"Blue horses II, after Franz Marc","portrait":true},{"src":"images/village-under-a-paper-sun.jpg","title":"Village under a paper sun","portrait":false},{"src":"images/mural-in-blue.jpg","title":"Mural, in blue","portrait":false},{"src":"images/river-town-after-dark.jpg","title":"River town, after dark","portrait":false},{"src":"images/blue-poppies-two-moons.jpg","title":"Blue poppies, two moons","portrait":false},{"src":"images/three-buddhas-marigold-offerings.jpg","title":"Three Buddhas, marigold offerings","portrait":false},{"src":"images/crossings-in-pale-wash.jpg","title":"Crossings in pale wash","portrait":false},{"src":"images/soft-ground.jpg","title":"Soft ground","portrait":false},{"src":"images/brick-arch-at-sunset.jpg","title":"Brick arch at sunset","portrait":true},{"src":"images/nine-squares.jpg","title":"Nine squares","portrait":false},{"src":"images/blue-hour-at-the-villas.jpg","title":"Blue hour at the villas","portrait":false},{"src":"images/late-sun-on-the-compound.jpg","title":"Late sun on the compound","portrait":false},{"src":"images/cosmology-in-blue.jpg","title":"Cosmology in blue","portrait":false},{"src":"images/the-blue-temple-imagined.jpg","title":"The blue temple, imagined","portrait":false},{"src":"images/torre-de-belm-lisbon.jpg","title":"Torre de Belém, Lisbon","portrait":false},{"src":"images/blue-flowers-orange-hearts.jpg","title":"Blue flowers, orange hearts","portrait":false},{"src":"images/azulejos-lisbon.jpg","title":"Azulejos, Lisbon","portrait":true},{"src":"images/poppies-in-green-mist.jpg","title":"Poppies in green mist","portrait":false},{"src":"images/delphiniums-moonrise.jpg","title":"Delphiniums, moonrise","portrait":false},{"src":"images/a-lisbon-side-street.jpg","title":"A Lisbon side street","portrait":true},{"src":"images/bellflowers-at-sundown.jpg","title":"Bellflowers at sundown","portrait":false},{"src":"images/irises-before-glass.jpg","title":"Irises before glass","portrait":false},{"src":"images/green-doors-lisbon.jpg","title":"Green doors, Lisbon","portrait":true},{"src":"images/malibu-keeps-studio-hours.jpg","title":"Malibu keeps studio hours","portrait":false},{"src":"images/yaksha-on-the-fairway.jpg","title":"Yaksha on the fairway","portrait":false},{"src":"images/red-lanterns.jpg","title":"Red lanterns","portrait":true},{"src":"images/the-column-of-light.jpg","title":"The column of light","portrait":false},{"src":"images/night-traffic-somewhere-ahead.jpg","title":"Night traffic, somewhere ahead","portrait":false},{"src":"images/ceiling-looking-up.jpg","title":"Ceiling, looking up","portrait":true},{"src":"images/toronto-turned-up.jpg","title":"Toronto, turned up","portrait":false},{"src":"images/fleur-de-lis-twenty-ways.gif","title":"Fleur-de-lis, twenty ways","portrait":false},{"src":"images/pool-floor-at-noon.jpg","title":"Pool floor at noon","portrait":true},{"src":"images/tokyo-tower-sky-on-fire.jpg","title":"Tokyo Tower, sky on fire","portrait":false},{"src":"images/toronto-waterfront.jpg","title":"Toronto, waterfront","portrait":false},{"src":"images/koi-in-the-rain.jpg","title":"Koi in the rain","portrait":false},{"src":"images/a-river-city-at-sunset.jpg","title":"A river city at sunset","portrait":false},{"src":"images/towers-in-fog.jpg","title":"Towers in fog","portrait":false}], -1);
+  buildPhotoDrum('photoTower', [{"src":"images/guardian-lions-and-the-wihan.jpg","ar":2.398,"title":"Guardian lions and the wihan","portrait":false},{"src":"images/aft-a-mark-of-sorts.jpg","ar":1,"title":"$AFT — a mark, of sorts","portrait":false},{"src":"images/carved-column-guardian.jpg","ar":0.45,"title":"Carved column guardian","portrait":true},{"src":"images/ex-libris-geometric-variant.jpg","ar":1,"title":"Ex Libris, geometric variant","portrait":false},{"src":"images/fleur-de-lis-after-new-orleans.jpg","ar":0.666,"title":"Fleur-de-lis, after New Orleans","portrait":true},{"src":"images/carved-rosettes-indigo-wall.jpg","ar":2.222,"title":"Carved rosettes, indigo wall","portrait":false},{"src":"images/star-tile-with-dragon.jpg","ar":1,"title":"Star tile with dragon","portrait":false},{"src":"images/dragon-and-orb.jpg","ar":1,"title":"Dragon and orb","portrait":false},{"src":"images/singha-before-the-rain.jpg","ar":2.222,"title":"Singha before the rain","portrait":false},{"src":"images/blue-cosmos.jpg","ar":1,"title":"Blue cosmos","portrait":false},{"src":"images/lilies-after-monet.jpg","ar":1,"title":"Lilies, after Monet","portrait":false},{"src":"images/all-in-white.jpg","ar":0.45,"title":"All in white","portrait":true},{"src":"images/irises-in-a-fleur-de-lis-vase.jpg","ar":1.5,"title":"Irises in a fleur-de-lis vase","portrait":false},{"src":"images/guardian-lion-carved-panel.jpg","ar":0.666,"title":"Guardian lion, carved panel","portrait":true},{"src":"images/naga-scales-glazed-ceramic.jpg","ar":2.222,"title":"Naga scales, glazed ceramic","portrait":false},{"src":"images/wyatt-earp-set-as-a-broadside.jpg","ar":0.666,"title":"Wyatt Earp, set as a broadside","portrait":true},{"src":"images/heinlein-set-as-a-broadside.jpg","ar":0.666,"title":"Heinlein, set as a broadside","portrait":true},{"src":"images/lanterns-and-cordyline.jpg","ar":2.222,"title":"Lanterns and cordyline","portrait":false},{"src":"images/chichi.jpg","ar":1.007,"title":"ChiChi, out of the sun","portrait":false},{"src":"images/malibu.jpg","ar":1.34,"title":"Malibu, above the bay","portrait":false},{"src":"images/bronze-buddha-gilded-halo.jpg","ar":0.627,"title":"Bronze Buddha, gilded halo","portrait":true},{"src":"images/portrait-with-porthole.jpg","ar":1,"title":"Portrait, with porthole","portrait":false},{"src":"images/lanna-roofs-at-midday.jpg","ar":2.222,"title":"Lanna roofs at midday","portrait":false},{"src":"images/fleur-de-lis-blue-and-gold.jpg","ar":1.002,"title":"Fleur-de-lis in blue and gold","portrait":false},{"src":"images/gold-leaf-on-blue.jpg","ar":0.806,"title":"Gold leaf on blue","portrait":true},{"src":"images/gong-and-striker.jpg","ar":2.222,"title":"Gong and striker","portrait":false},{"src":"images/circles-and-triangles.jpg","ar":1.833,"title":"Circles and triangles","portrait":false},{"src":"images/blue-horses-after-franz-marc.jpg","ar":1.833,"title":"Blue horses, after Franz Marc","portrait":false},{"src":"images/inside-the-blue-wihan.jpg","ar":0.75,"title":"Inside the blue wihan","portrait":true},{"src":"images/blue-horses-ii-after-franz-marc.jpg","ar":0.671,"title":"Blue horses II, after Franz Marc","portrait":true},{"src":"images/village-under-a-paper-sun.jpg","ar":1,"title":"Village under a paper sun","portrait":false},{"src":"images/mural-in-blue.jpg","ar":1.891,"title":"Mural, in blue","portrait":false},{"src":"images/river-town-after-dark.jpg","ar":1,"title":"River town, after dark","portrait":false},{"src":"images/blue-poppies-two-moons.jpg","ar":1.792,"title":"Blue poppies, two moons","portrait":false},{"src":"images/three-buddhas-marigold-offerings.jpg","ar":2.222,"title":"Three Buddhas, marigold offerings","portrait":false},{"src":"images/crossings-in-pale-wash.jpg","ar":1,"title":"Crossings in pale wash","portrait":false},{"src":"images/soft-ground.jpg","ar":1,"title":"Soft ground","portrait":false},{"src":"images/brick-arch-at-sunset.jpg","ar":0.45,"title":"Brick arch at sunset","portrait":true},{"src":"images/nine-squares.jpg","ar":1,"title":"Nine squares","portrait":false},{"src":"images/blue-hour-at-the-villas.jpg","ar":1,"title":"Blue hour at the villas","portrait":false},{"src":"images/late-sun-on-the-compound.jpg","ar":2.222,"title":"Late sun on the compound","portrait":false},{"src":"images/cosmology-in-blue.jpg","ar":1,"title":"Cosmology in blue","portrait":false},{"src":"images/the-blue-temple-imagined.jpg","ar":1,"title":"The blue temple, imagined","portrait":false},{"src":"images/torre-de-belm-lisbon.jpg","ar":1,"title":"Torre de Belém, Lisbon","portrait":false},{"src":"images/blue-flowers-orange-hearts.jpg","ar":1.77,"title":"Blue flowers, orange hearts","portrait":false},{"src":"images/azulejos-lisbon.jpg","ar":0.75,"title":"Azulejos, Lisbon","portrait":true},{"src":"images/poppies-in-green-mist.jpg","ar":1,"title":"Poppies in green mist","portrait":false},{"src":"images/delphiniums-moonrise.jpg","ar":1,"title":"Delphiniums, moonrise","portrait":false},{"src":"images/a-lisbon-side-street.jpg","ar":0.75,"title":"A Lisbon side street","portrait":true},{"src":"images/bellflowers-at-sundown.jpg","ar":1,"title":"Bellflowers at sundown","portrait":false},{"src":"images/irises-before-glass.jpg","ar":1,"title":"Irises before glass","portrait":false},{"src":"images/green-doors-lisbon.jpg","ar":0.75,"title":"Green doors, Lisbon","portrait":true},{"src":"images/malibu-keeps-studio-hours.jpg","ar":1,"title":"Malibu keeps studio hours","portrait":false},{"src":"images/yaksha-on-the-fairway.jpg","ar":1,"title":"Yaksha on the fairway","portrait":false},{"src":"images/red-lanterns.jpg","ar":0.75,"title":"Red lanterns","portrait":true},{"src":"images/the-column-of-light.jpg","ar":1,"title":"The column of light","portrait":false},{"src":"images/night-traffic-somewhere-ahead.jpg","ar":1,"title":"Night traffic, somewhere ahead","portrait":false},{"src":"images/ceiling-looking-up.jpg","ar":0.75,"title":"Ceiling, looking up","portrait":true},{"src":"images/toronto-turned-up.jpg","ar":1.778,"title":"Toronto, turned up","portrait":false},{"src":"images/fleur-de-lis-twenty-ways.gif","ar":1.765,"title":"Fleur-de-lis, twenty ways","portrait":false},{"src":"images/pool-floor-at-noon.jpg","ar":0.75,"title":"Pool floor at noon","portrait":true},{"src":"images/tokyo-tower-sky-on-fire.jpg","ar":1,"title":"Tokyo Tower, sky on fire","portrait":false},{"src":"images/toronto-waterfront.jpg","ar":1.77,"title":"Toronto, waterfront","portrait":false},{"src":"images/koi-in-the-rain.jpg","ar":1.5,"title":"Koi in the rain","portrait":false},{"src":"images/a-river-city-at-sunset.jpg","ar":1,"title":"A river city at sunset","portrait":false},{"src":"images/towers-in-fog.jpg","ar":1,"title":"Towers in fog","portrait":false}], -1);
 </script>
 </body>
 </html>

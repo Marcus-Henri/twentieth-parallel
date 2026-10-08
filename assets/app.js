@@ -204,10 +204,11 @@ function closePdrumZoom() {
 var PD_STYLES = [
   { key: 'original', className: '', label: '' },
   { key: 'impressionist', className: 'pd-style-impressionist', label: 'impressionist pass' },
-  { key: 'pointillist', className: 'pd-style-pointillist', label: 'pointillist pass' },
+  { key: 'cubist', className: 'pd-style-cubist', label: 'cubist pass' },
+  { key: 'vangogh', className: 'pd-style-vangogh', label: 'van Gogh pass' },
   { key: 'fauvist', className: 'pd-style-fauvist', label: 'fauvist pass' },
-  { key: 'woodblock', className: 'pd-style-woodblock', label: 'woodblock pass' },
-  { key: 'manga', className: 'pd-style-manga', label: 'manga pass' }
+  { key: 'pointillist', className: 'pd-style-pointillist', label: 'pointillist pass' },
+  { key: 'basquiat', className: 'pd-style-basquiat', label: 'basquiat pass, for laughs' }
 ];
 
 /* builds ONE gigantic tower: containerId is an empty .pdrum-frame element,
@@ -239,31 +240,51 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   /* every photo gets its own starting point in the style cycle, staggered by
      its position in the list, so simultaneous tiles don't all land on the
      same treatment at the same time */
-  images.forEach(function (im, idx) { im._pdOffset = idx % PD_STYLES.length; });
+  images.forEach(function (im, idx) { im._pdOffset = idx % (PD_STYLES.length - 1); });
 
-  /* FACES/radius match the reference tower exactly (9 faces, radius 234) --
-     that's what gives it two columns facing you at once and the spacing Mark
-     prefers, rather than the single dominant wedge a bigger radius produces.
-     ROWS_PER_FACE is doubled from the reference's 5 to make this one
-     substantially taller, without stretching individual tiles. */
-  var FACES = 9, ROWS_PER_FACE = 10;
-  var FACE_BUDGET = ROWS_PER_FACE;
+  /* 9 faces at radius 234 match the reference tower exactly -- two columns
+     facing you at once, with the spacing Mark prefers. Each face is filled
+     with photographs sized to their OWN proportions: a tile's share of the
+     face's height is that picture's height-to-width ratio, so nothing sits in
+     a box that doesn't fit it and there are no wide white bars around it. */
+  var FACES = 9;
   var radius = 234;
+  var GAP = 3; /* px between tiles in a face */
+  var revolved = false; /* styles only begin once the tower has turned once */
 
   var queue = images.slice();
   function refillQueue() { queue = queue.concat(images); }
-  function takeNext(budget) {
-    if (!queue.length) { refillQueue(); }
-    var idx = -1;
-    for (var k = 0; k < queue.length; k++) {
-      if ((queue[k].portrait ? 3 : 1) <= budget) { idx = k; break; }
+  /* a picture's height, in units of its face's width */
+  function hOf(im) {
+    var ar = im.ar > 0 ? im.ar : (im.portrait ? 0.67 : 1.5);
+    return Math.max(0.25, Math.min(2.4, 1 / ar));
+  }
+  /* the next picture that fits what's left of the face; earlier in the queue
+     wins, unless taking it would strand a sliver nothing else could fill */
+  function takeNext(rem, used) {
+    if (queue.length < 24) { refillQueue(); }
+    var best = -1, bestScore = 1e9;
+    for (var k = 0; k < queue.length && k < 18; k++) {
+      if (used[queue[k].src]) { continue; }
+      var left = rem - hOf(queue[k]);
+      if (left < -0.12) { continue; }
+      var sliver = left > 0.12 && left < 0.3;
+      var score = sliver ? 5 + Math.abs(left) : k * 0.01;
+      if (score < bestScore) { bestScore = score; best = k; }
     }
-    if (idx === -1) { refillQueue(); idx = 0; }
-    return queue.splice(idx, 1)[0];
+    return best === -1 ? null : queue.splice(best, 1)[0];
+  }
+  /* the first revolution shows every picture as it really is; after that each
+     return of a picture steps it on to its next treatment */
+  function styleFor(im) {
+    if (!revolved) { return PD_STYLES[0]; }
+    im._pdStep = (im._pdStep == null) ? im._pdOffset : im._pdStep + 1;
+    return PD_STYLES[1 + (im._pdStep % (PD_STYLES.length - 1))];
   }
   function makeTile(im, styleDef) {
     var fig = document.createElement('figure');
     fig.className = 'pdrum-tile' + (styleDef.className ? ' ' + styleDef.className : '');
+    try { fig.style.setProperty('--pd-src', 'url("' + new URL(im.src, document.baseURI).href + '")'); } catch (e) {}
     var img = document.createElement('img');
     img.src = im.src; img.alt = im.title; img.loading = 'lazy';
     var cap = document.createElement('figcaption');
@@ -271,7 +292,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     if (styleDef.label) {
       var tag = document.createElement('span');
       tag.className = 'pd-style-tag';
-      tag.textContent = ' — ' + styleDef.label;
+      tag.textContent = ' \u2014 ' + styleDef.label;
       cap.appendChild(tag);
     }
     fig.appendChild(img); fig.appendChild(cap);
@@ -285,22 +306,19 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   }
   function fillFace(col) {
     while (col.firstChild) { col.removeChild(col.firstChild); }
-    var budget = FACE_BUDGET;
-    while (budget > 0) {
-      var im = takeNext(budget);
-      var span = im.portrait ? 3 : 1;
-      /* each photo remembers how many times it's been dealt, across the whole
-         life of this tower, so its own Nth appearance picks the Nth style in
-         the cycle — offset by its own staggered starting point */
-      im._pdPass = (im._pdPass || 0) + 1;
-      var styleDef = PD_STYLES[(im._pdPass - 1 + im._pdOffset) % PD_STYLES.length];
-      var t = makeTile(im, styleDef);
-      t.style.gridRow = 'span ' + span;
+    var w = col.offsetWidth || 162, hgt = col.offsetHeight || 998;
+    var rem = (hgt + GAP) / w, used = {}, guard = 0;
+    while (rem > 0.12 && guard++ < 14) {
+      var im = takeNext(rem, used);
+      if (!im) { break; }
+      used[im.src] = true;
+      var t = makeTile(im, styleFor(im));
+      var hh = hOf(im);
+      t.style.flex = hh + ' 1 0';
       col.appendChild(t);
-      budget -= span;
+      rem -= hh + GAP / w;
     }
   }
-
   var cols = [];
   for (var i = 0; i < FACES; i++) {
     var col = document.createElement('div');
@@ -355,6 +373,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     lastT = t;
     if (!paused && !pdrumZoomOpen) {
       rotation += degPerMs * dt;
+      if (!revolved && Math.abs(rotation) >= 360) { revolved = true; }
       drum.style.transform = 'rotateY(' + rotation + 'deg)';
       maybeRefillHiddenFace(t);
     }
@@ -723,10 +742,9 @@ window.tpSound = (function () {
    All motion is in game-units per SECOND, advanced by real elapsed time, so
    it plays the same on a 60 Hz and a 144 Hz screen. ---- */
 (function () {
-  var toggle = document.getElementById('pongToggle');
   var panel  = document.getElementById('pongPanel');
   var canvas = document.getElementById('pongCanvas');
-  if (!toggle || !panel || !canvas || !canvas.getContext) return;
+  if (!panel || !canvas || !canvas.getContext) return;
 
   var ctx = canvas.getContext('2d');
   var W = 700, H = 400; // logical game units; canvas is scaled to fit via CSS
@@ -735,7 +753,7 @@ window.tpSound = (function () {
   var WIN_SCORE = 11;
 
   /* tuning knobs (units per second at "normal") */
-  var BALL_START = 165, BALL_MAX = 340, PLAYER_SPEED = 200, CPU_SPEED = 118;
+  var BALL_START = 231, BALL_MAX = 476, PLAYER_SPEED = 280, CPU_SPEED = 165;
   var SPEEDS = [ { name: 'easy', k: 0.7 }, { name: 'normal', k: 1 }, { name: 'quick', k: 1.5 } ];
   var speedIdx = 1;
   try {
@@ -756,7 +774,7 @@ window.tpSound = (function () {
   var soundBtn     = document.getElementById('pongSound');
   var speedBtn     = document.getElementById('pongSpeed');
 
-  var IDLE_MSG = 'Click, tap, or press any key to serve · move with ↑ ↓ or W S, or drag.';
+  var IDLE_MSG = 'Click the table to serve · move with ↑ ↓ or W S, or drag.';
 
   var state = {
     started: false, running: false, hold: 0,
@@ -1017,29 +1035,26 @@ window.tpSound = (function () {
       ctx.fillStyle = ground; ctx.globalAlpha = 0.55;
       ctx.font = '13px "IBM Plex Mono", monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('click / tap / any key to serve', W / 2, H / 2 - 26);
+      ctx.fillText('click the table to serve', W / 2, H / 2 - 26);
       ctx.globalAlpha = 1;
     }
   }
 
-  window.addEventListener('keydown', function (e) {
-    if (panel.hidden || !inView || e.ctrlKey || e.metaKey || e.altKey) return;
-    var tag = e.target && e.target.tagName;
-    /* typing initials, or pressing a focused button, is not gameplay */
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-    if (tag === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
+  /* keys only count while the table has focus (click it), so arrows and space
+     still scroll the page the rest of the time */
+  canvas.addEventListener('keydown', function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     var isUp = e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W';
     var isDown = e.key === 'ArrowDown' || e.key === 's' || e.key === 'S';
     if (isUp) { state.keys.up = true; state.dragY = null; }
     if (isDown) { state.keys.down = true; state.dragY = null; }
-    if (isUp || isDown || e.key === ' ') e.preventDefault();
-    maybeServe();
+    if (isUp || isDown || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); maybeServe(); }
   });
-  window.addEventListener('keyup', function (e) {
+  canvas.addEventListener('keyup', function (e) {
     if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') state.keys.up = false;
     if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') state.keys.down = false;
   });
-  window.addEventListener('blur', function () { state.keys.up = false; state.keys.down = false; });
+  canvas.addEventListener('blur', function () { state.keys.up = false; state.keys.down = false; });
 
   function pointerY (clientY) {
     var rect = canvas.getBoundingClientRect();
@@ -1047,6 +1062,7 @@ window.tpSound = (function () {
   }
   canvas.addEventListener('pointerdown', function (e) {
     try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    try { canvas.focus({ preventScroll: true }); } catch (err) {}
     state.dragY = pointerY(e.clientY);
     if (snd) snd.unlock();
     maybeServe();
@@ -1059,13 +1075,9 @@ window.tpSound = (function () {
     canvas.addEventListener(ev, function () { state.dragY = null; });
   });
 
-  toggle.addEventListener('click', function () {
-    var opening = panel.hidden;
-    panel.hidden = !opening;
-    toggle.setAttribute('aria-expanded', opening ? 'true' : 'false');
-    if (opening) { fit(); draw(); }
-  });
-
+  fit(); draw();
+  if (window.ResizeObserver) { new ResizeObserver(function () { fit(); }).observe(canvas); }
+  window.addEventListener('load', function () { fit(); draw(); });
   renderBoard();
   requestAnimationFrame(step);
 })();
@@ -1075,11 +1087,10 @@ window.tpSound = (function () {
    a soft drop, space drops the piece, P pauses. Keys only count while the
    board has focus, so the page scrolls normally the rest of the time. ---- */
 (function () {
-  var toggle = document.getElementById('tetToggle');
   var panel  = document.getElementById('tetPanel');
   var cv     = document.getElementById('tetCanvas');
   var nx     = document.getElementById('tetNext');
-  if (!toggle || !panel || !cv || !nx || !cv.getContext) return;
+  if (!panel || !cv || !nx || !cv.getContext) return;
 
   var ctx = cv.getContext('2d'), nctx = nx.getContext('2d');
   var COLS = 10, ROWS = 20, CELL = 24; /* canvas is 240 x 480 */
@@ -1181,7 +1192,7 @@ window.tpSound = (function () {
       if (!collides(m, cur.x + kicks[i], cur.y)) { cur.m = m; cur.x += kicks[i]; sfx.turn(); return; }
     }
   }
-  function interval () { return Math.max(90, 820 - (level - 1) * 68); }
+  function interval () { return Math.max(64, 586 - (level - 1) * 49); }
 
   function lock () {
     for (var r = 0; r < cur.m.length; r++) {
@@ -1335,13 +1346,6 @@ window.tpSound = (function () {
     else if (mode === 'paused') resume();
   });
 
-  toggle.addEventListener('click', function () {
-    var opening = panel.hidden;
-    panel.hidden = !opening;
-    toggle.setAttribute('aria-expanded', opening ? 'true' : 'false');
-    if (opening) { stats(); draw(); } else { pause(); }
-  });
-
-  stats();
+  stats(); draw();
   requestAnimationFrame(frame);
 })();
