@@ -1385,6 +1385,13 @@ a.pulse--card:hover, a.pulse--card:focus-visible{ border-color: var(--accent); t
 a.pulse--card:hover .pulse-title{ color: var(--accent); }
 .pulse-ex{ color: var(--ink-2); font-size: 0.97rem; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; margin: 0 0 0.7rem; }
 .pulse-more{ font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+
+/* pitch line under the masthead, and the same card inside the Now list */
+.pitch{ max-width: var(--measure); margin: 1.4rem 0 0; padding: 0.9rem 1.1rem; border-left: 3px solid var(--seal); background: var(--ground-tint); font-size: 1rem; line-height: 1.55; }
+.pitch strong{ font-family: var(--display); font-weight: 500; }
+.pitch-cta{ display: inline-block; margin-top: 0.55rem; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--seal); text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 1px; }
+.pitch-cta:hover{ color: var(--accent); }
+.now-item a.pulse--now{ margin: 1rem 0 0.75rem; max-width: 34rem; }
 /* ============ print ============ */
 @media print{
   :root{ color-scheme: light; }
