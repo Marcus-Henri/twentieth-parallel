@@ -204,8 +204,8 @@ function closePdrumZoom() {
 var PD_STYLES = [
   { key: 'original', className: '', label: '' },
   { key: 'impressionist', className: 'pd-style-impressionist', label: 'impressionist pass' },
-  { key: 'cubist', className: 'pd-style-cubist', label: 'cubist pass' },
-  { key: 'vangogh', className: 'pd-style-vangogh', label: 'van Gogh pass' },
+  { key: 'cubist', className: 'pd-style-cubist', label: 'cubist pass, after Picasso' },
+  { key: 'vangogh', className: 'pd-style-vangogh', label: 'after van Gogh' },
   { key: 'fauvist', className: 'pd-style-fauvist', label: 'fauvist pass' },
   { key: 'pointillist', className: 'pd-style-pointillist', label: 'pointillist pass' },
   { key: 'basquiat', className: 'pd-style-basquiat', label: 'basquiat pass, for laughs' }
@@ -295,7 +295,8 @@ window.buildPhotoDrum = function (containerId, images, direction) {
       tag.textContent = ' \u2014 ' + styleDef.label;
       cap.appendChild(tag);
     }
-    fig.appendChild(img); fig.appendChild(cap);
+    var ov = document.createElement('i'); ov.className = 'pd-ov'; ov.setAttribute('aria-hidden', 'true');
+    fig.appendChild(img); fig.appendChild(ov); fig.appendChild(cap);
     fig.setAttribute('tabindex', '0');
     fig.setAttribute('role', 'button');
     fig.addEventListener('click', function () { openPdrumZoom(im, drum); });
