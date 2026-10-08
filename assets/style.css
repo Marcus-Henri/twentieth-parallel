@@ -1373,6 +1373,18 @@ img { max-width: 100%; }
 }
 .pulse h3{ margin: 0 0 0.5rem; }
 .pulse p:last-child{ margin: 0; }
+
+/* Dispatches feature card: thumbnail, headline and opening lines, all one link */
+a.pulse--card{ display: grid; grid-template-columns: 1fr; gap: 0; padding: 0; max-width: 40rem; text-decoration: none; color: inherit; overflow: hidden; transition: border-color .2s ease, transform .2s ease; }
+a.pulse--card:hover, a.pulse--card:focus-visible{ border-color: var(--accent); transform: translateY(-2px); color: inherit; }
+.pulse-thumb{ display: block; width: 100%; height: auto; border-bottom: 1px solid var(--rule); }
+.pulse-body{ display: block; padding: 1rem 1.25rem 1.1rem; }
+.pulse-body > span{ display: block; }
+.pulse--card .pulse-kicker{ margin: 0 0 0.5rem; }
+.pulse-title{ font-family: var(--display); font-weight: 500; font-size: 1.35rem; line-height: 1.2; margin: 0 0 0.55rem; }
+a.pulse--card:hover .pulse-title{ color: var(--accent); }
+.pulse-ex{ color: var(--ink-2); font-size: 0.97rem; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; margin: 0 0 0.7rem; }
+.pulse-more{ font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
 /* ============ print ============ */
 @media print{
   :root{ color-scheme: light; }
