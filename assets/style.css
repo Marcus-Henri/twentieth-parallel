@@ -1040,7 +1040,7 @@ img { max-width: 100%; }
   position: relative;
   /* width matches the reference tower exactly — this is the "spacing" Mark
      prefers, from 9 faces at radius 234 rather than 10 faces at a wider one */
-  width: clamp(143px, 17vw, 208px); height: 78%;
+  width: min(clamp(143px, 17vw, 208px), 162px); height: 78%;
   /* 78%, same as the reference: the face nearest the viewer sits
      translateZ(radius) closer to the camera, and perspective magnifies
      anything pulled that close by roughly 1700/(1700-234) =~ 1.16x. At 78%
@@ -1053,6 +1053,8 @@ img { max-width: 100%; }
   position: absolute; inset: 0;
   display: grid; grid-template-rows: repeat(10, 1fr); gap: 8px;
   backface-visibility: hidden;
+  /* smooths the jagged edge a 3D-turned plane otherwise gets in Chrome-family browsers */
+  outline: 1px solid transparent;
 }
 .pdrum-tile{
   position: relative; margin: 0; overflow: hidden; border-radius: 1px;
@@ -1076,10 +1078,11 @@ img { max-width: 100%; }
   opacity: 0; transform: translateY(4px);
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
-/* the drum is spaced out around the cylinder, so a tile can pop forward at
-   full 1.5x scale without swallowing its neighbors above and below. */
+/* a tile only nudges forward on hover. The faces are flat planes standing at
+   angles to each other, so a bigger zoom pushes the tile through the neighbouring
+   faces and they slice strips out of it; click opens the full-size view. */
 .tower-col .pdrum-tile:hover, .tower-col .pdrum-tile:focus-visible{
-  transform: scale(1.5); z-index: 6;
+  transform: scale(1.04); z-index: 6;
   box-shadow: 0 0 0 2px var(--accent), 0 20px 44px -16px rgba(0,0,0,0.6);
 }
 .tower-col .pdrum-tile:hover img, .tower-col .pdrum-tile:focus-visible img{ filter: saturate(1.08); }
@@ -1150,7 +1153,7 @@ img { max-width: 100%; }
 @media (max-width: 640px){
   .pdrum-frame{ width: 100%; }
   .tower-scene{ height: 840px; }
-  .tower-drum{ width: clamp(115px, 34vw, 165px); }
+  .tower-drum{ width: min(clamp(115px, 34vw, 165px), 162px); }
   .pdrum-zoom-card{ width: 92vw; }
 }
 @media (prefers-reduced-motion: reduce){
@@ -1181,10 +1184,8 @@ img { max-width: 100%; }
   border: 1px solid var(--rule);
   display: grid; gap: 1.1rem;
 }
-@media (min-width: 42rem){
-  .arcade-panel{ grid-template-columns: minmax(0, 1fr) 11rem; align-items: start; }
-}
 .arcade-stage{ position: relative; }
+.arcade-table{ position: relative; }
 #pongCanvas{
   display: block; width: 100%; height: auto; aspect-ratio: 7 / 4;
   background: var(--ink); border: 1px solid var(--rule);
@@ -1250,11 +1251,53 @@ img { max-width: 100%; }
   #pongCanvas{ cursor: default; }
 }
 
+/* Pong, second pass: bigger table (the board now sits underneath it), tools row */
+.arcade-tools{ display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.7rem; }
+.arcade-tool{
+  font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-3); background: none; border: 1px solid var(--rule); border-radius: 0;
+  padding: 0.35rem 0.7rem; cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+.arcade-tool:hover{ color: var(--ink-2); border-color: var(--accent); }
+@media (min-width: 42rem){
+  .arcade-list{
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(5, auto); grid-auto-flow: column; column-gap: 2rem;
+  }
+}
+
+/* ---- mini Tetris, tucked under the section list in the left rail (wide screens only) ---- */
+.tet{ display: none; }
+@media (min-width: 64rem) and (min-height: 42rem){
+  .tet{ display: block; margin-top: 1.6rem; }
+}
+.tet-toggle{
+  display: flex; align-items: center; gap: 0.5rem; width: 100%; text-align: left;
+  font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-3); background: none; border: 0; border-top: 1px dashed var(--rule);
+  border-radius: 0; padding: 0.7rem 0 0; cursor: pointer;
+}
+.tet-toggle:hover{ color: var(--ink-2); }
+.tet-panel{ margin-top: 0.8rem; }
+.tet-play{ display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.7rem; align-items: start; }
+#tetCanvas{
+  display: block; height: auto; aspect-ratio: 1 / 2;
+  width: clamp(4.5rem, calc((100vh - 36rem) / 2), 7rem);
+  background: var(--ink); border: 1px solid var(--rule); cursor: pointer; touch-action: none;
+}
+#tetNext{ display: block; width: 2.6rem; height: 2.6rem; background: var(--ink); border: 1px solid var(--rule); }
+.tet-side{ display: grid; gap: 0.7rem; }
+.tet-stats{ margin: 0; font-family: var(--mono); }
+.tet-stats div{ display: flex; flex-direction: column; margin-bottom: 0.4rem; }
+.tet-stats dt{ font-size: 0.5rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+.tet-stats dd{ margin: 0; font-size: 0.8125rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.tet-keys{ margin: 0.7rem 0 0.6rem; font-family: var(--mono); font-size: 0.5625rem; line-height: 1.6; letter-spacing: 0.04em; color: var(--ink-3); }
 /* ============ print ============ */
 @media print{
   :root{ color-scheme: light; }
   body{ background: #fff; color: #000; }
-  .nav, #progress, #lb, .enquire, .now-cta, .pdrum-wrap, #pdrumZoom, .arcade{ display: none !important; }
+  .nav, #progress, #lb, .enquire, .now-cta, .pdrum-wrap, #pdrumZoom, .arcade, .tet{ display: none !important; }
   a{ color: inherit; text-decoration: underline; }
   .main{ max-width: none; margin: 0; padding: 0 0.5in; }
   .masthead .portrait img{ max-width: 2in; }

@@ -669,10 +669,59 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   setTimeout(function () { clearInterval(poll); }, 20000);
 })();
 
+/* ---- shared sound for the two arcade toys: tiny WebAudio blips. Nothing
+   plays until a visitor starts a game (browsers require a gesture first), and
+   the mute choice is remembered on this device. ---- */
+window.tpSound = (function () {
+  var KEY = 'tp_sound_v1', ctx = null, on = true, subs = [];
+  try { on = window.localStorage.getItem(KEY) !== 'off'; } catch (e) {}
+  function ac () {
+    if (!ctx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      try { ctx = new AC(); } catch (e) { return null; }
+    }
+    if (ctx.state === 'suspended' && ctx.resume) { try { ctx.resume(); } catch (e) {} }
+    return ctx;
+  }
+  function tone (freq, dur, type, vol, delay, slideTo) {
+    if (!on) return;
+    var c = ac(); if (!c) return;
+    var t0 = c.currentTime + (delay || 0);
+    var o = c.createOscillator(), g = c.createGain();
+    o.type = type || 'square';
+    o.frequency.setValueAtTime(freq, t0);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+    var v = (vol == null ? 0.06 : vol);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(v, t0 + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(t0); o.stop(t0 + dur + 0.03);
+  }
+  function seq (notes, step, type, vol) {
+    notes.forEach(function (f, i) { tone(f, step * 1.5, type, vol, i * step); });
+  }
+  var api = {
+    isOn: function () { return on; },
+    set: function (v) {
+      on = !!v;
+      try { window.localStorage.setItem(KEY, on ? 'on' : 'off'); } catch (e) {}
+      subs.forEach(function (fn) { fn(on); });
+    },
+    toggle: function () { api.set(!on); ac(); if (on) tone(660, 0.07, 'square', 0.05); },
+    unlock: ac, tone: tone, seq: seq,
+    onChange: function (fn) { subs.push(fn); }
+  };
+  return api;
+})();
+
 /* ---- a mini Pong table, tucked into the Axion/HotPlay entry: human vs a
    beatable house AI, served with arrow keys, W/S, or a drag on the table.
    High scores are kept per browser via localStorage — there's no backend
-   behind this site, so this board is "this device", not every visitor. ---- */
+   behind this site, so this board is "this device", not every visitor.
+   All motion is in game-units per SECOND, advanced by real elapsed time, so
+   it plays the same on a 60 Hz and a 144 Hz screen. ---- */
 (function () {
   var toggle = document.getElementById('pongToggle');
   var panel  = document.getElementById('pongPanel');
@@ -680,9 +729,20 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   if (!toggle || !panel || !canvas || !canvas.getContext) return;
 
   var ctx = canvas.getContext('2d');
-  var W = 560, H = 320; // logical game units; canvas is scaled to fit via CSS
+  var W = 700, H = 400; // logical game units; canvas is scaled to fit via CSS
   var STORE_KEY = 'tp_pong_scores_v1';
+  var SPEED_KEY = 'tp_pong_speed_v1';
   var WIN_SCORE = 11;
+
+  /* tuning knobs (units per second at "normal") */
+  var BALL_START = 165, BALL_MAX = 340, PLAYER_SPEED = 200, CPU_SPEED = 118;
+  var SPEEDS = [ { name: 'easy', k: 0.7 }, { name: 'normal', k: 1 }, { name: 'quick', k: 1.5 } ];
+  var speedIdx = 1;
+  try {
+    var saved = parseInt(window.localStorage.getItem(SPEED_KEY), 10);
+    if (saved >= 0 && saved < SPEEDS.length) speedIdx = saved;
+  } catch (e) {}
+  function kk () { return SPEEDS[speedIdx].k; }
 
   var msg          = document.getElementById('pongMsg');
   var youScoreEl   = document.getElementById('pongScoreYou');
@@ -693,21 +753,44 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   var saveBtn      = document.getElementById('pongSave');
   var skipBtn      = document.getElementById('pongSkip');
   var boardEl      = document.getElementById('pongBoard');
+  var soundBtn     = document.getElementById('pongSound');
+  var speedBtn     = document.getElementById('pongSpeed');
+
+  var IDLE_MSG = 'Click, tap, or press any key to serve · move with ↑ ↓ or W S, or drag.';
 
   var state = {
-    started: false, running: false,
-    youY: H / 2, cpuY: H / 2,
+    started: false, running: false, hold: 0,
+    youY: H / 2, cpuY: H / 2, noise: 0, noiseT: 0,
     ballX: W / 2, ballY: H / 2, ballVX: 0, ballVY: 0,
     youScore: 0, cpuScore: 0,
-    paddleH: 56, paddleW: 9, ballR: 6,
+    paddleH: 72, paddleW: 11, ballR: 7.5, padX: 22,
     keys: {}, dragY: null
   };
 
-  /* crisper strokes on high-DPI screens, without changing the game's own
-     W/H coordinate system */
-  var dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-  canvas.width = W * dpr; canvas.height = H * dpr;
-  ctx.scale(dpr, dpr);
+  /* sound effects (all no-ops while muted) */
+  var snd = window.tpSound;
+  var sfx = {
+    wall:  function () { snd && snd.tone(220, 0.04, 'square', 0.035); },
+    you:   function () { snd && snd.tone(520, 0.06, 'square', 0.05); },
+    cpu:   function () { snd && snd.tone(380, 0.06, 'square', 0.05); },
+    point: function () { snd && snd.seq([523, 659, 784], 0.07, 'triangle', 0.06); },
+    miss:  function () { snd && snd.tone(200, 0.28, 'sawtooth', 0.045, 0, 90); },
+    win:   function () { snd && snd.seq([523, 659, 784, 1047], 0.11, 'square', 0.05); },
+    lose:  function () { snd && snd.tone(330, 0.6, 'sawtooth', 0.05, 0, 70); },
+    serve: function () { snd && snd.tone(440, 0.05, 'triangle', 0.04); }
+  };
+
+  /* crisper strokes: size the backing store to the displayed size x DPR,
+     without changing the game's own W/H coordinate system */
+  function fit () {
+    var dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    var cssW = canvas.clientWidth || W;
+    var s = Math.min(3, Math.max(1, cssW / W * dpr));
+    var pw = Math.round(W * s), ph = Math.round(H * s);
+    if (canvas.width !== pw || canvas.height !== ph) { canvas.width = pw; canvas.height = ph; }
+    ctx.setTransform(pw / W, 0, 0, ph / H, 0, 0);
+  }
+  window.addEventListener('resize', function () { if (!panel.hidden) { fit(); draw(); } });
 
   function loadScores () {
     try {
@@ -752,20 +835,24 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   function resetBall (dir) {
     state.ballX = W / 2; state.ballY = H / 2;
     var angle = Math.random() * 0.6 - 0.3;
-    var speed = 4.4;
+    var speed = BALL_START * kk();
     state.ballVX = Math.cos(angle) * speed * (dir || (Math.random() < 0.5 ? 1 : -1));
     state.ballVY = Math.sin(angle) * speed;
+    state.hold = 0.7; /* a beat to find the ball before it moves */
   }
   function clampY (y) { return Math.max(state.paddleH / 2, Math.min(H - state.paddleH / 2, y)); }
 
   function resetMatch () {
-    state.started = false;
+    state.started = false; state.running = false;
     state.youScore = 0; state.cpuScore = 0;
+    state.ballX = W / 2; state.ballY = H / 2;
     youScoreEl.textContent = '0'; cpuScoreEl.textContent = '0';
   }
   function serve () {
     state.started = true; state.running = true;
+    if (snd) snd.unlock();
     resetBall();
+    sfx.serve();
     msg.textContent = '';
   }
   function maybeServe () {
@@ -775,11 +862,13 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   function endGame (youWon) {
     state.running = false;
     if (youWon) {
+      sfx.win();
       winText.textContent = 'You win, ' + WIN_SCORE + '–' + state.cpuScore + '. Enter your initials:';
       initialsInput.value = '';
       winOverlay.hidden = false;
       initialsInput.focus();
     } else {
+      sfx.lose();
       msg.textContent = 'House wins, ' + WIN_SCORE + '–' + state.youScore + '. Click to try again.';
       resetMatch();
     }
@@ -790,75 +879,118 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     addScore(val, state.cpuScore);
     winOverlay.hidden = true;
     resetMatch();
-    msg.textContent = 'Click, tap, or press any key to serve.';
+    msg.textContent = IDLE_MSG;
   });
   skipBtn.addEventListener('click', function () {
     winOverlay.hidden = true;
     resetMatch();
-    msg.textContent = 'Click, tap, or press any key to serve.';
+    msg.textContent = IDLE_MSG;
   });
   initialsInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
   });
 
-  function step () {
-    if (panel.hidden) { requestAnimationFrame(step); return; }
-
-    if (state.running) {
-      var sp = 5.2;
-      if (state.keys.up) state.youY -= sp;
-      if (state.keys.down) state.youY += sp;
-      if (state.dragY != null) state.youY += (state.dragY - state.youY) * 0.35;
-      state.youY = clampY(state.youY);
-
-      /* house paddle: capped speed plus a little aim noise, so it's
-         beatable rather than a wall */
-      var cpuSpeed = 3.1;
-      var target = state.ballY + (Math.random() - 0.5) * 18;
-      var diff = target - state.cpuY;
-      state.cpuY += Math.max(-cpuSpeed, Math.min(cpuSpeed, diff));
-      state.cpuY = clampY(state.cpuY);
-
-      state.ballX += state.ballVX;
-      state.ballY += state.ballVY;
-
-      if (state.ballY - state.ballR < 0) { state.ballY = state.ballR; state.ballVY *= -1; }
-      if (state.ballY + state.ballR > H) { state.ballY = H - state.ballR; state.ballVY *= -1; }
-
-      var padXYou = 18, padXCpu = W - 18;
-      if (state.ballVX < 0 &&
-          state.ballX - state.ballR <= padXYou + state.paddleW / 2 &&
-          state.ballX + state.ballR >= padXYou - state.paddleW / 2 &&
-          Math.abs(state.ballY - state.youY) <= state.paddleH / 2 + state.ballR) {
-        state.ballX = padXYou + state.paddleW / 2 + state.ballR;
-        var rel = (state.ballY - state.youY) / (state.paddleH / 2);
-        var spY = Math.min(9, Math.hypot(state.ballVX, state.ballVY) * 1.06);
-        state.ballVX = Math.abs(spY * Math.cos(rel * 0.5));
-        state.ballVY = spY * Math.sin(rel * 1.1);
-      }
-      if (state.ballVX > 0 &&
-          state.ballX + state.ballR >= padXCpu - state.paddleW / 2 &&
-          state.ballX - state.ballR <= padXCpu + state.paddleW / 2 &&
-          Math.abs(state.ballY - state.cpuY) <= state.paddleH / 2 + state.ballR) {
-        state.ballX = padXCpu - state.paddleW / 2 - state.ballR;
-        var rel2 = (state.ballY - state.cpuY) / (state.paddleH / 2);
-        var spC = Math.min(9, Math.hypot(state.ballVX, state.ballVY) * 1.06);
-        state.ballVX = -Math.abs(spC * Math.cos(rel2 * 0.5));
-        state.ballVY = spC * Math.sin(rel2 * 1.1);
-      }
-
-      if (state.ballX < -20) {
-        state.cpuScore++; cpuScoreEl.textContent = state.cpuScore;
-        if (state.cpuScore >= WIN_SCORE) { draw(); endGame(false); requestAnimationFrame(step); return; }
-        resetBall(1);
-      } else if (state.ballX > W + 20) {
-        state.youScore++; youScoreEl.textContent = state.youScore;
-        if (state.youScore >= WIN_SCORE) { draw(); endGame(true); requestAnimationFrame(step); return; }
-        resetBall(-1);
-      }
+  function paintTools () {
+    if (soundBtn && snd) {
+      soundBtn.textContent = snd.isOn() ? 'Sound on' : 'Sound off';
+      soundBtn.setAttribute('aria-pressed', snd.isOn() ? 'true' : 'false');
     }
-    draw();
+    if (speedBtn) speedBtn.textContent = 'Speed: ' + SPEEDS[speedIdx].name;
+  }
+  if (soundBtn && snd) {
+    soundBtn.addEventListener('click', function () { snd.toggle(); });
+    snd.onChange(paintTools);
+  }
+  if (speedBtn) {
+    speedBtn.addEventListener('click', function () {
+      var old = kk();
+      speedIdx = (speedIdx + 1) % SPEEDS.length;
+      try { window.localStorage.setItem(SPEED_KEY, String(speedIdx)); } catch (e) {}
+      var r = kk() / old; /* rescale the ball already in flight */
+      state.ballVX *= r; state.ballVY *= r;
+      paintTools();
+    });
+  }
+  paintTools();
+
+  /* pause while the table is scrolled out of view, so the house can't pile
+     up points against nobody */
+  var inView = true;
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) {
+      inView = entries[0].isIntersecting;
+    }, { threshold: 0.25 }).observe(canvas);
+  }
+
+  function update (dt) {
+    var k = kk();
+    if (state.keys.up) state.youY -= PLAYER_SPEED * dt;
+    if (state.keys.down) state.youY += PLAYER_SPEED * dt;
+    if (state.dragY != null) state.youY += (state.dragY - state.youY) * (1 - Math.pow(0.65, dt * 60));
+    state.youY = clampY(state.youY);
+
+    /* house paddle: capped speed plus a little aim noise (re-rolled a few
+       times a second), so it's beatable rather than a wall */
+    state.noiseT -= dt;
+    if (state.noiseT <= 0) { state.noise = (Math.random() - 0.5) * 36; state.noiseT = 0.2; }
+    var diff = state.ballY + state.noise - state.cpuY;
+    var cs = CPU_SPEED * k * dt;
+    state.cpuY = clampY(state.cpuY + Math.max(-cs, Math.min(cs, diff)));
+
+    if (state.hold > 0) { state.hold -= dt; return; }
+
+    state.ballX += state.ballVX * dt;
+    state.ballY += state.ballVY * dt;
+
+    if (state.ballY - state.ballR < 0) { state.ballY = state.ballR; state.ballVY = Math.abs(state.ballVY); sfx.wall(); }
+    if (state.ballY + state.ballR > H) { state.ballY = H - state.ballR; state.ballVY = -Math.abs(state.ballVY); sfx.wall(); }
+
+    var padXYou = state.padX, padXCpu = W - state.padX, hw = state.paddleW / 2;
+    var top = BALL_MAX * k;
+    if (state.ballVX < 0 &&
+        state.ballX - state.ballR <= padXYou + hw &&
+        state.ballX + state.ballR >= padXYou - hw &&
+        Math.abs(state.ballY - state.youY) <= state.paddleH / 2 + state.ballR) {
+      state.ballX = padXYou + hw + state.ballR;
+      var rel = (state.ballY - state.youY) / (state.paddleH / 2);
+      var spY = Math.min(top, Math.hypot(state.ballVX, state.ballVY) * 1.06);
+      state.ballVX = Math.abs(spY * Math.cos(rel * 0.5));
+      state.ballVY = spY * Math.sin(rel * 1.1);
+      sfx.you();
+    }
+    if (state.ballVX > 0 &&
+        state.ballX + state.ballR >= padXCpu - hw &&
+        state.ballX - state.ballR <= padXCpu + hw &&
+        Math.abs(state.ballY - state.cpuY) <= state.paddleH / 2 + state.ballR) {
+      state.ballX = padXCpu - hw - state.ballR;
+      var rel2 = (state.ballY - state.cpuY) / (state.paddleH / 2);
+      var spC = Math.min(top, Math.hypot(state.ballVX, state.ballVY) * 1.06);
+      state.ballVX = -Math.abs(spC * Math.cos(rel2 * 0.5));
+      state.ballVY = spC * Math.sin(rel2 * 1.1);
+      sfx.cpu();
+    }
+
+    if (state.ballX < -20) {
+      state.cpuScore++; cpuScoreEl.textContent = state.cpuScore;
+      if (state.cpuScore >= WIN_SCORE) { endGame(false); return; }
+      sfx.miss();
+      resetBall(1);
+    } else if (state.ballX > W + 20) {
+      state.youScore++; youScoreEl.textContent = state.youScore;
+      if (state.youScore >= WIN_SCORE) { endGame(true); return; }
+      sfx.point();
+      resetBall(-1);
+    }
+  }
+
+  var last = 0;
+  function step (now) {
     requestAnimationFrame(step);
+    var dt = last ? Math.min(0.05, (now - last) / 1000) : 1 / 60;
+    last = now;
+    if (panel.hidden || !inView) return;
+    if (state.running) update(dt);
+    draw();
   }
 
   function draw () {
@@ -869,58 +1001,347 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     var rule   = (cs.getPropertyValue('--rule') || '#CDD1CA').trim();
 
     ctx.strokeStyle = rule;
-    ctx.setLineDash([4, 6]);
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 8]);
     ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
     ctx.setLineDash([]);
 
     ctx.fillStyle = ground;
-    ctx.fillRect(18 - state.paddleW / 2, state.youY - state.paddleH / 2, state.paddleW, state.paddleH);
-    ctx.fillRect(W - 18 - state.paddleW / 2, state.cpuY - state.paddleH / 2, state.paddleW, state.paddleH);
+    ctx.fillRect(state.padX - state.paddleW / 2, state.youY - state.paddleH / 2, state.paddleW, state.paddleH);
+    ctx.fillRect(W - state.padX - state.paddleW / 2, state.cpuY - state.paddleH / 2, state.paddleW, state.paddleH);
 
     ctx.fillStyle = accent;
     ctx.beginPath(); ctx.arc(state.ballX, state.ballY, state.ballR, 0, Math.PI * 2); ctx.fill();
 
     if (!state.started) {
       ctx.fillStyle = ground; ctx.globalAlpha = 0.55;
-      ctx.font = '11px "IBM Plex Mono", monospace';
+      ctx.font = '13px "IBM Plex Mono", monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('click / tap / any key to serve', W / 2, H / 2 - 20);
+      ctx.fillText('click / tap / any key to serve', W / 2, H / 2 - 26);
       ctx.globalAlpha = 1;
     }
   }
 
   window.addEventListener('keydown', function (e) {
-    if (panel.hidden) return;
-    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') state.keys.up = true;
-    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') state.keys.down = true;
-    if (['ArrowUp', 'ArrowDown', 'w', 'W', 's', 'S', ' '].indexOf(e.key) !== -1) e.preventDefault();
+    if (panel.hidden || !inView || e.ctrlKey || e.metaKey || e.altKey) return;
+    var tag = e.target && e.target.tagName;
+    /* typing initials, or pressing a focused button, is not gameplay */
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (tag === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
+    var isUp = e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W';
+    var isDown = e.key === 'ArrowDown' || e.key === 's' || e.key === 'S';
+    if (isUp) { state.keys.up = true; state.dragY = null; }
+    if (isDown) { state.keys.down = true; state.dragY = null; }
+    if (isUp || isDown || e.key === ' ') e.preventDefault();
     maybeServe();
   });
   window.addEventListener('keyup', function (e) {
     if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') state.keys.up = false;
     if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') state.keys.down = false;
   });
+  window.addEventListener('blur', function () { state.keys.up = false; state.keys.down = false; });
 
   function pointerY (clientY) {
     var rect = canvas.getBoundingClientRect();
     return (clientY - rect.top) / rect.height * H;
   }
   canvas.addEventListener('pointerdown', function (e) {
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
     state.dragY = pointerY(e.clientY);
+    if (snd) snd.unlock();
     maybeServe();
   });
   canvas.addEventListener('pointermove', function (e) {
-    if (e.buttons || e.pointerType === 'touch') state.dragY = pointerY(e.clientY);
+    if (e.buttons) state.dragY = pointerY(e.clientY);
+  });
+  /* release the paddle when the pointer lifts, so the keys take over again */
+  ['pointerup', 'pointercancel'].forEach(function (ev) {
+    canvas.addEventListener(ev, function () { state.dragY = null; });
   });
 
   toggle.addEventListener('click', function () {
     var opening = panel.hidden;
     panel.hidden = !opening;
     toggle.setAttribute('aria-expanded', opening ? 'true' : 'false');
-    if (opening) draw();
+    if (opening) { fit(); draw(); }
   });
 
   renderBoard();
-  draw();
   requestAnimationFrame(step);
+})();
+
+/* ---- a mini Tetris, tucked under the section list in the left rail (wide
+   screens only). Click the board to play: arrow keys move and turn, down is
+   a soft drop, space drops the piece, P pauses. Keys only count while the
+   board has focus, so the page scrolls normally the rest of the time. ---- */
+(function () {
+  var toggle = document.getElementById('tetToggle');
+  var panel  = document.getElementById('tetPanel');
+  var cv     = document.getElementById('tetCanvas');
+  var nx     = document.getElementById('tetNext');
+  if (!toggle || !panel || !cv || !nx || !cv.getContext) return;
+
+  var ctx = cv.getContext('2d'), nctx = nx.getContext('2d');
+  var COLS = 10, ROWS = 20, CELL = 24; /* canvas is 240 x 480 */
+  var BEST_KEY = 'tp_tetris_best_v1';
+  var scoreEl = document.getElementById('tetScore');
+  var linesEl = document.getElementById('tetLines');
+  var levelEl = document.getElementById('tetLevel');
+  var bestEl  = document.getElementById('tetBest');
+  var soundBtn = document.getElementById('tetSound');
+  var snd = window.tpSound;
+
+  var SHAPES = {
+    I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+    O: [[1,1],[1,1]],
+    T: [[0,1,0],[1,1,1],[0,0,0]],
+    S: [[0,1,1],[1,1,0],[0,0,0]],
+    Z: [[1,1,0],[0,1,1],[0,0,0]],
+    J: [[1,0,0],[1,1,1],[0,0,0]],
+    L: [[0,0,1],[1,1,1],[0,0,0]]
+  };
+  var NAMES = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
+  var COLOR_VARS = { I: '--celadon', O: '--brass', T: '--plum', S: '--moss', Z: '--seal', J: '--indigo', L: '--clay' };
+  var COLOR_FALLBACK = { I: '#6FA39A', O: '#B8893A', T: '#7A5A86', S: '#6B7D4A', Z: '#B4372A', J: '#4A5F8C', L: '#B4693F' };
+
+  var board = emptyBoard(), cur = null, nextName = null, bag = [];
+  var score = 0, lines = 0, level = 1, best = 0, acc = 0, last = 0;
+  var mode = 'idle'; /* idle | playing | paused | over */
+  try { best = parseInt(window.localStorage.getItem(BEST_KEY), 10) || 0; } catch (e) {}
+
+  var sfx = {
+    move:  function () { snd && snd.tone(300, 0.02, 'square', 0.02); },
+    turn:  function () { snd && snd.tone(440, 0.04, 'triangle', 0.045); },
+    lock:  function () { snd && snd.tone(120, 0.09, 'sine', 0.08); },
+    clear: function (n) {
+      if (!snd) return;
+      if (n >= 4) snd.seq([523, 659, 784, 1047, 1319], 0.06, 'square', 0.05);
+      else snd.seq([523, 659, 784].slice(0, n + 1), 0.07, 'square', 0.045);
+    },
+    level: function () { snd && snd.seq([392, 523, 659], 0.08, 'triangle', 0.06); },
+    start: function () { snd && snd.seq([392, 523], 0.08, 'triangle', 0.05); },
+    over:  function () { snd && snd.tone(330, 0.6, 'sawtooth', 0.05, 0, 70); }
+  };
+  function paintSound () {
+    if (!soundBtn || !snd) return;
+    soundBtn.textContent = snd.isOn() ? 'Sound on' : 'Sound off';
+    soundBtn.setAttribute('aria-pressed', snd.isOn() ? 'true' : 'false');
+  }
+  if (soundBtn && snd) {
+    soundBtn.addEventListener('click', function () { snd.toggle(); });
+    snd.onChange(paintSound);
+  }
+  paintSound();
+
+  function emptyBoard () {
+    var b = [];
+    for (var y = 0; y < ROWS; y++) { var row = []; for (var x = 0; x < COLS; x++) row.push(0); b.push(row); }
+    return b;
+  }
+  function rotate (m) {
+    var n = m.length, r = [];
+    for (var y = 0; y < n; y++) { r[y] = []; for (var x = 0; x < n; x++) r[y][x] = m[n - 1 - x][y]; }
+    return r;
+  }
+  function nextFromBag () {
+    if (!bag.length) {
+      bag = NAMES.slice();
+      for (var i = bag.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1)), t = bag[i]; bag[i] = bag[j]; bag[j] = t;
+      }
+    }
+    return bag.pop();
+  }
+  function collides (m, x, y) {
+    for (var r = 0; r < m.length; r++) {
+      for (var c = 0; c < m[r].length; c++) {
+        if (!m[r][c]) continue;
+        var bx = x + c, by = y + r;
+        if (bx < 0 || bx >= COLS || by >= ROWS) return true;
+        if (by >= 0 && board[by][bx]) return true;
+      }
+    }
+    return false;
+  }
+  function spawn () {
+    var name = nextName || nextFromBag();
+    nextName = nextFromBag();
+    var m = SHAPES[name].map(function (r) { return r.slice(); });
+    cur = { name: name, m: m, x: Math.floor((COLS - m.length) / 2), y: name === 'I' ? -1 : 0 };
+    drawNext();
+    if (collides(cur.m, cur.x, cur.y)) gameOver();
+  }
+  function move (dx, dy) {
+    if (collides(cur.m, cur.x + dx, cur.y + dy)) return false;
+    cur.x += dx; cur.y += dy; return true;
+  }
+  function turn () {
+    var m = rotate(cur.m), kicks = [0, -1, 1, -2, 2];
+    for (var i = 0; i < kicks.length; i++) {
+      if (!collides(m, cur.x + kicks[i], cur.y)) { cur.m = m; cur.x += kicks[i]; sfx.turn(); return; }
+    }
+  }
+  function interval () { return Math.max(90, 820 - (level - 1) * 68); }
+
+  function lock () {
+    for (var r = 0; r < cur.m.length; r++) {
+      for (var c = 0; c < cur.m[r].length; c++) {
+        if (!cur.m[r][c]) continue;
+        var by = cur.y + r, bx = cur.x + c;
+        if (by >= 0) board[by][bx] = cur.name;
+      }
+    }
+    var n = 0;
+    for (var y = ROWS - 1; y >= 0;) {
+      var full = true;
+      for (var x = 0; x < COLS; x++) { if (!board[y][x]) { full = false; break; } }
+      if (full) { board.splice(y, 1); board.unshift(emptyBoard()[0]); n++; } else { y--; }
+    }
+    if (n) {
+      score += [0, 100, 300, 500, 800][n] * level;
+      lines += n;
+      var lv = 1 + Math.floor(lines / 10);
+      if (lv > level) { level = lv; sfx.clear(n); setTimeout(sfx.level, 260); } else { sfx.clear(n); }
+    } else { sfx.lock(); }
+    stats();
+    spawn();
+  }
+  function hardDrop () {
+    var d = 0;
+    while (move(0, 1)) d++;
+    score += d * 2;
+    acc = 0;
+    lock();
+  }
+  function gameOver () {
+    mode = 'over';
+    if (score > best) { best = score; try { window.localStorage.setItem(BEST_KEY, String(best)); } catch (e) {} }
+    sfx.over();
+    stats();
+  }
+  function stats () {
+    scoreEl.textContent = score; linesEl.textContent = lines;
+    levelEl.textContent = level; bestEl.textContent = Math.max(best, score);
+  }
+  function start () {
+    board = emptyBoard(); bag = []; nextName = null;
+    score = 0; lines = 0; level = 1; acc = 0;
+    mode = 'playing';
+    if (snd) snd.unlock();
+    sfx.start();
+    spawn(); stats(); draw();
+  }
+  function pause () { if (mode === 'playing') { mode = 'paused'; draw(); } }
+  function resume () { if (mode === 'paused') { mode = 'playing'; last = 0; draw(); } }
+
+  function colorOf (name, cs) {
+    var v = (cs.getPropertyValue(COLOR_VARS[name]) || '').trim();
+    return v || COLOR_FALLBACK[name];
+  }
+  function block (g, px, py, s, color, alpha) {
+    var a = alpha == null ? 1 : alpha;
+    g.globalAlpha = a; g.fillStyle = color; g.fillRect(px + 1, py + 1, s - 2, s - 2);
+    g.globalAlpha = a * 0.35; g.fillStyle = '#fff'; g.fillRect(px + 1, py + 1, s - 2, Math.max(2, s * 0.14));
+    g.globalAlpha = 1;
+  }
+  function drawNext () {
+    nctx.clearRect(0, 0, 96, 96);
+    if (!nextName) return;
+    var cs = getComputedStyle(document.body), m = SHAPES[nextName], s = 20;
+    var minR = 9, maxR = -1, minC = 9, maxC = -1, r, c;
+    for (r = 0; r < m.length; r++) for (c = 0; c < m[r].length; c++) if (m[r][c]) {
+      if (r < minR) minR = r; if (r > maxR) maxR = r; if (c < minC) minC = c; if (c > maxC) maxC = c;
+    }
+    var ox = (96 - (maxC - minC + 1) * s) / 2, oy = (96 - (maxR - minR + 1) * s) / 2;
+    for (r = 0; r < m.length; r++) for (c = 0; c < m[r].length; c++) if (m[r][c]) {
+      block(nctx, ox + (c - minC) * s, oy + (r - minR) * s, s, colorOf(nextName, cs));
+    }
+  }
+  function banner (cs, ground, rows) {
+    var ink = (cs.getPropertyValue('--ink') || '#1A1C1A').trim();
+    ctx.globalAlpha = 0.8; ctx.fillStyle = ink; ctx.fillRect(0, 0, COLS * CELL, ROWS * CELL);
+    ctx.globalAlpha = 1; ctx.fillStyle = ground; ctx.textAlign = 'center';
+    ctx.font = '500 24px "IBM Plex Mono", monospace';
+    rows.forEach(function (t, i) { ctx.fillText(t, COLS * CELL / 2, ROWS * CELL / 2 + 8 + i * 34 - (rows.length - 1) * 17); });
+  }
+  function draw () {
+    var cs = getComputedStyle(document.body);
+    var ground = (cs.getPropertyValue('--ground') || '#EFEFEB').trim();
+    ctx.clearRect(0, 0, COLS * CELL, ROWS * CELL);
+
+    ctx.strokeStyle = ground; ctx.globalAlpha = 0.07; ctx.lineWidth = 1; ctx.beginPath();
+    var i;
+    for (i = 1; i < COLS; i++) { ctx.moveTo(i * CELL + 0.5, 0); ctx.lineTo(i * CELL + 0.5, ROWS * CELL); }
+    for (i = 1; i < ROWS; i++) { ctx.moveTo(0, i * CELL + 0.5); ctx.lineTo(COLS * CELL, i * CELL + 0.5); }
+    ctx.stroke(); ctx.globalAlpha = 1;
+
+    var x, y, r, c;
+    for (y = 0; y < ROWS; y++) for (x = 0; x < COLS; x++) {
+      if (board[y][x]) block(ctx, x * CELL, y * CELL, CELL, colorOf(board[y][x], cs));
+    }
+    if (cur && mode !== 'idle') {
+      var gy = cur.y;
+      while (!collides(cur.m, cur.x, gy + 1)) gy++;
+      for (r = 0; r < cur.m.length; r++) for (c = 0; c < cur.m[r].length; c++) {
+        if (!cur.m[r][c]) continue;
+        if (gy !== cur.y && gy + r >= 0) block(ctx, (cur.x + c) * CELL, (gy + r) * CELL, CELL, colorOf(cur.name, cs), 0.22);
+      }
+      for (r = 0; r < cur.m.length; r++) for (c = 0; c < cur.m[r].length; c++) {
+        if (cur.m[r][c] && cur.y + r >= 0) block(ctx, (cur.x + c) * CELL, (cur.y + r) * CELL, CELL, colorOf(cur.name, cs));
+      }
+    }
+    if (mode === 'idle') banner(cs, ground, ['TETRIS', 'click to play']);
+    else if (mode === 'paused') banner(cs, ground, ['PAUSED', 'click or P']);
+    else if (mode === 'over') banner(cs, ground, ['GAME OVER', 'click to retry']);
+  }
+
+  function frame (now) {
+    requestAnimationFrame(frame);
+    var dt = last ? Math.min(100, now - last) : 16;
+    last = now;
+    if (mode !== 'playing' || panel.hidden) return;
+    acc += dt;
+    var iv = interval();
+    if (acc >= iv) {
+      acc -= iv;
+      if (!move(0, 1)) lock();
+      draw();
+    }
+  }
+
+  cv.addEventListener('keydown', function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var k = e.key, handled = true;
+    if (mode === 'idle' || mode === 'over') {
+      if (k === 'Enter' || k === ' ') start(); else handled = false;
+    } else if (mode === 'paused') {
+      if (k === 'p' || k === 'P' || k === 'Escape' || k === 'Enter' || k === ' ') resume(); else handled = false;
+    } else {
+      if (k === 'ArrowLeft' || k === 'a' || k === 'A') { if (move(-1, 0)) sfx.move(); }
+      else if (k === 'ArrowRight' || k === 'd' || k === 'D') { if (move(1, 0)) sfx.move(); }
+      else if (k === 'ArrowDown' || k === 's' || k === 'S') { if (move(0, 1)) { score += 1; acc = 0; stats(); } }
+      else if (k === 'ArrowUp' || k === 'w' || k === 'W' || k === 'x' || k === 'X') { if (!e.repeat) turn(); }
+      else if (k === ' ') { if (!e.repeat) hardDrop(); }
+      else if (k === 'p' || k === 'P' || k === 'Escape') pause();
+      else handled = false;
+      if (handled) draw();
+    }
+    if (handled) e.preventDefault();
+  });
+  cv.addEventListener('blur', pause);
+  cv.addEventListener('pointerdown', function () {
+    cv.focus();
+    if (mode === 'idle' || mode === 'over') start();
+    else if (mode === 'paused') resume();
+  });
+
+  toggle.addEventListener('click', function () {
+    var opening = panel.hidden;
+    panel.hidden = !opening;
+    toggle.setAttribute('aria-expanded', opening ? 'true' : 'false');
+    if (opening) { stats(); draw(); } else { pause(); }
+  });
+
+  stats();
+  requestAnimationFrame(frame);
 })();

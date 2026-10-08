@@ -46,7 +46,29 @@
       <li><a href="#dispatches">Dispatches</a></li>
       <li><a href="#smile">Made Me Smile</a></li>
       <li><a href="#elsewhere">Elsewhere</a></li>
-    </ul>
+        </ul>
+
+    <div class="tet" id="tetris">
+      <button class="tet-toggle" id="tetToggle" type="button" aria-expanded="false" aria-controls="tetPanel">
+        <span class="arcade-toggle-dot" aria-hidden="true"></span>A little Tetris
+      </button>
+      <div class="tet-panel" id="tetPanel" hidden>
+        <div class="tet-play">
+          <canvas id="tetCanvas" width="240" height="480" tabindex="0" aria-label="Tetris: click the board to play, then use the arrow keys to move and turn, space to drop, P to pause"></canvas>
+          <div class="tet-side">
+            <canvas id="tetNext" width="96" height="96" aria-hidden="true"></canvas>
+            <dl class="tet-stats">
+              <div><dt>Score</dt><dd id="tetScore">0</dd></div>
+              <div><dt>Lines</dt><dd id="tetLines">0</dd></div>
+              <div><dt>Level</dt><dd id="tetLevel">1</dd></div>
+              <div><dt>Best</dt><dd id="tetBest">0</dd></div>
+            </dl>
+          </div>
+        </div>
+        <p class="tet-keys">&larr; &rarr; move &middot; &uarr; turn &middot; &darr; soft<br>space drop &middot; P pause</p>
+        <button class="arcade-tool" id="tetSound" type="button" aria-pressed="true">Sound on</button>
+      </div>
+    </div>
   </div>
 
   <div class="main">
@@ -278,20 +300,26 @@
           </button>
           <div class="arcade-panel" id="pongPanel" hidden>
             <div class="arcade-stage">
-              <canvas id="pongCanvas" width="560" height="320" aria-label="Pong game: use arrow keys, W and S, or drag on the table to move your paddle"></canvas>
-              <div class="arcade-hud" aria-hidden="true">
-                <div class="arcade-score"><span id="pongScoreYou">0</span><b>you</b></div>
-                <div class="arcade-score"><span id="pongScoreCpu">0</span><b>house</b></div>
-              </div>
-              <div class="arcade-win" id="pongWin" hidden>
-                <p id="pongWinText"></p>
-                <label>Initials <input id="pongInitials" maxlength="3" autocomplete="off" spellcheck="false" inputmode="latin" pattern="[A-Za-z]*" aria-label="Your initials, up to three letters"></label>
-                <div>
-                  <button type="button" id="pongSave">Save score</button>
-                  <button type="button" id="pongSkip">Skip</button>
+              <div class="arcade-table">
+                <canvas id="pongCanvas" width="700" height="400" aria-label="Pong game: use arrow keys, W and S, or drag on the table to move your paddle"></canvas>
+                <div class="arcade-hud" aria-hidden="true">
+                  <div class="arcade-score"><span id="pongScoreYou">0</span><b>you</b></div>
+                  <div class="arcade-score"><span id="pongScoreCpu">0</span><b>house</b></div>
+                </div>
+                <div class="arcade-win" id="pongWin" hidden>
+                  <p id="pongWinText"></p>
+                  <label>Initials <input id="pongInitials" maxlength="3" autocomplete="off" spellcheck="false" inputmode="latin" pattern="[A-Za-z]*" aria-label="Your initials, up to three letters"></label>
+                  <div>
+                    <button type="button" id="pongSave">Save score</button>
+                    <button type="button" id="pongSkip">Skip</button>
+                  </div>
                 </div>
               </div>
-              <p class="arcade-msg" id="pongMsg" aria-live="polite">Click, tap, or press any key to serve.</p>
+              <p class="arcade-msg" id="pongMsg" aria-live="polite">Click, tap, or press any key to serve &middot; move with &uarr; &darr; or W S, or drag.</p>
+              <div class="arcade-tools">
+                <button type="button" class="arcade-tool" id="pongSound" aria-pressed="true">Sound on</button>
+                <button type="button" class="arcade-tool" id="pongSpeed">Speed: normal</button>
+              </div>
             </div>
             <div class="arcade-board">
               <h4>High Scores <span>— this device</span></h4>
