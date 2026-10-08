@@ -668,3 +668,259 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   }, 1000);
   setTimeout(function () { clearInterval(poll); }, 20000);
 })();
+
+/* ---- a mini Pong table, tucked into the Axion/HotPlay entry: human vs a
+   beatable house AI, served with arrow keys, W/S, or a drag on the table.
+   High scores are kept per browser via localStorage — there's no backend
+   behind this site, so this board is "this device", not every visitor. ---- */
+(function () {
+  var toggle = document.getElementById('pongToggle');
+  var panel  = document.getElementById('pongPanel');
+  var canvas = document.getElementById('pongCanvas');
+  if (!toggle || !panel || !canvas || !canvas.getContext) return;
+
+  var ctx = canvas.getContext('2d');
+  var W = 560, H = 320; // logical game units; canvas is scaled to fit via CSS
+  var STORE_KEY = 'tp_pong_scores_v1';
+  var WIN_SCORE = 11;
+
+  var msg          = document.getElementById('pongMsg');
+  var youScoreEl   = document.getElementById('pongScoreYou');
+  var cpuScoreEl   = document.getElementById('pongScoreCpu');
+  var winOverlay   = document.getElementById('pongWin');
+  var winText      = document.getElementById('pongWinText');
+  var initialsInput= document.getElementById('pongInitials');
+  var saveBtn      = document.getElementById('pongSave');
+  var skipBtn      = document.getElementById('pongSkip');
+  var boardEl      = document.getElementById('pongBoard');
+
+  var state = {
+    started: false, running: false,
+    youY: H / 2, cpuY: H / 2,
+    ballX: W / 2, ballY: H / 2, ballVX: 0, ballVY: 0,
+    youScore: 0, cpuScore: 0,
+    paddleH: 56, paddleW: 9, ballR: 6,
+    keys: {}, dragY: null
+  };
+
+  /* crisper strokes on high-DPI screens, without changing the game's own
+     W/H coordinate system */
+  var dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+
+  function loadScores () {
+    try {
+      var raw = window.localStorage.getItem(STORE_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list : [];
+    } catch (e) { return []; }
+  }
+  function saveScores (list) {
+    try { window.localStorage.setItem(STORE_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+  function renderBoard () {
+    var list = loadScores();
+    boardEl.innerHTML = '';
+    if (!list.length) {
+      var empty = document.createElement('li');
+      empty.className = 'arcade-empty';
+      empty.textContent = 'No winners yet. Be the first.';
+      boardEl.appendChild(empty);
+      return;
+    }
+    list.slice(0, 10).forEach(function (row) {
+      var li = document.createElement('li');
+      var name = document.createElement('span');
+      name.textContent = row.initials;
+      var score = document.createElement('span');
+      score.textContent = WIN_SCORE + '–' + row.lost;
+      li.appendChild(name); li.appendChild(score);
+      boardEl.appendChild(li);
+    });
+  }
+  function addScore (initials, lost) {
+    var list = loadScores();
+    list.push({ initials: initials, lost: lost, t: Date.now() });
+    /* ranked by fewest points conceded in an 11-point win; earlier of a tie
+       keeps its place */
+    list.sort(function (a, b) { return a.lost - b.lost || a.t - b.t; });
+    saveScores(list.slice(0, 10));
+    renderBoard();
+  }
+
+  function resetBall (dir) {
+    state.ballX = W / 2; state.ballY = H / 2;
+    var angle = Math.random() * 0.6 - 0.3;
+    var speed = 4.4;
+    state.ballVX = Math.cos(angle) * speed * (dir || (Math.random() < 0.5 ? 1 : -1));
+    state.ballVY = Math.sin(angle) * speed;
+  }
+  function clampY (y) { return Math.max(state.paddleH / 2, Math.min(H - state.paddleH / 2, y)); }
+
+  function resetMatch () {
+    state.started = false;
+    state.youScore = 0; state.cpuScore = 0;
+    youScoreEl.textContent = '0'; cpuScoreEl.textContent = '0';
+  }
+  function serve () {
+    state.started = true; state.running = true;
+    resetBall();
+    msg.textContent = '';
+  }
+  function maybeServe () {
+    if (!winOverlay.hidden) return;
+    if (!state.started) serve();
+  }
+  function endGame (youWon) {
+    state.running = false;
+    if (youWon) {
+      winText.textContent = 'You win, ' + WIN_SCORE + '–' + state.cpuScore + '. Enter your initials:';
+      initialsInput.value = '';
+      winOverlay.hidden = false;
+      initialsInput.focus();
+    } else {
+      msg.textContent = 'House wins, ' + WIN_SCORE + '–' + state.youScore + '. Click to try again.';
+      resetMatch();
+    }
+  }
+
+  saveBtn.addEventListener('click', function () {
+    var val = (initialsInput.value || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) || 'YOU';
+    addScore(val, state.cpuScore);
+    winOverlay.hidden = true;
+    resetMatch();
+    msg.textContent = 'Click, tap, or press any key to serve.';
+  });
+  skipBtn.addEventListener('click', function () {
+    winOverlay.hidden = true;
+    resetMatch();
+    msg.textContent = 'Click, tap, or press any key to serve.';
+  });
+  initialsInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
+  });
+
+  function step () {
+    if (panel.hidden) { requestAnimationFrame(step); return; }
+
+    if (state.running) {
+      var sp = 5.2;
+      if (state.keys.up) state.youY -= sp;
+      if (state.keys.down) state.youY += sp;
+      if (state.dragY != null) state.youY += (state.dragY - state.youY) * 0.35;
+      state.youY = clampY(state.youY);
+
+      /* house paddle: capped speed plus a little aim noise, so it's
+         beatable rather than a wall */
+      var cpuSpeed = 3.1;
+      var target = state.ballY + (Math.random() - 0.5) * 18;
+      var diff = target - state.cpuY;
+      state.cpuY += Math.max(-cpuSpeed, Math.min(cpuSpeed, diff));
+      state.cpuY = clampY(state.cpuY);
+
+      state.ballX += state.ballVX;
+      state.ballY += state.ballVY;
+
+      if (state.ballY - state.ballR < 0) { state.ballY = state.ballR; state.ballVY *= -1; }
+      if (state.ballY + state.ballR > H) { state.ballY = H - state.ballR; state.ballVY *= -1; }
+
+      var padXYou = 18, padXCpu = W - 18;
+      if (state.ballVX < 0 &&
+          state.ballX - state.ballR <= padXYou + state.paddleW / 2 &&
+          state.ballX + state.ballR >= padXYou - state.paddleW / 2 &&
+          Math.abs(state.ballY - state.youY) <= state.paddleH / 2 + state.ballR) {
+        state.ballX = padXYou + state.paddleW / 2 + state.ballR;
+        var rel = (state.ballY - state.youY) / (state.paddleH / 2);
+        var spY = Math.min(9, Math.hypot(state.ballVX, state.ballVY) * 1.06);
+        state.ballVX = Math.abs(spY * Math.cos(rel * 0.5));
+        state.ballVY = spY * Math.sin(rel * 1.1);
+      }
+      if (state.ballVX > 0 &&
+          state.ballX + state.ballR >= padXCpu - state.paddleW / 2 &&
+          state.ballX - state.ballR <= padXCpu + state.paddleW / 2 &&
+          Math.abs(state.ballY - state.cpuY) <= state.paddleH / 2 + state.ballR) {
+        state.ballX = padXCpu - state.paddleW / 2 - state.ballR;
+        var rel2 = (state.ballY - state.cpuY) / (state.paddleH / 2);
+        var spC = Math.min(9, Math.hypot(state.ballVX, state.ballVY) * 1.06);
+        state.ballVX = -Math.abs(spC * Math.cos(rel2 * 0.5));
+        state.ballVY = spC * Math.sin(rel2 * 1.1);
+      }
+
+      if (state.ballX < -20) {
+        state.cpuScore++; cpuScoreEl.textContent = state.cpuScore;
+        if (state.cpuScore >= WIN_SCORE) { draw(); endGame(false); requestAnimationFrame(step); return; }
+        resetBall(1);
+      } else if (state.ballX > W + 20) {
+        state.youScore++; youScoreEl.textContent = state.youScore;
+        if (state.youScore >= WIN_SCORE) { draw(); endGame(true); requestAnimationFrame(step); return; }
+        resetBall(-1);
+      }
+    }
+    draw();
+    requestAnimationFrame(step);
+  }
+
+  function draw () {
+    ctx.clearRect(0, 0, W, H);
+    var cs = getComputedStyle(document.body);
+    var ground = (cs.getPropertyValue('--ground') || '#EFEFEB').trim();
+    var accent = (cs.getPropertyValue('--accent') || '#9A6E28').trim();
+    var rule   = (cs.getPropertyValue('--rule') || '#CDD1CA').trim();
+
+    ctx.strokeStyle = rule;
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = ground;
+    ctx.fillRect(18 - state.paddleW / 2, state.youY - state.paddleH / 2, state.paddleW, state.paddleH);
+    ctx.fillRect(W - 18 - state.paddleW / 2, state.cpuY - state.paddleH / 2, state.paddleW, state.paddleH);
+
+    ctx.fillStyle = accent;
+    ctx.beginPath(); ctx.arc(state.ballX, state.ballY, state.ballR, 0, Math.PI * 2); ctx.fill();
+
+    if (!state.started) {
+      ctx.fillStyle = ground; ctx.globalAlpha = 0.55;
+      ctx.font = '11px "IBM Plex Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('click / tap / any key to serve', W / 2, H / 2 - 20);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  window.addEventListener('keydown', function (e) {
+    if (panel.hidden) return;
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') state.keys.up = true;
+    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') state.keys.down = true;
+    if (['ArrowUp', 'ArrowDown', 'w', 'W', 's', 'S', ' '].indexOf(e.key) !== -1) e.preventDefault();
+    maybeServe();
+  });
+  window.addEventListener('keyup', function (e) {
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') state.keys.up = false;
+    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') state.keys.down = false;
+  });
+
+  function pointerY (clientY) {
+    var rect = canvas.getBoundingClientRect();
+    return (clientY - rect.top) / rect.height * H;
+  }
+  canvas.addEventListener('pointerdown', function (e) {
+    state.dragY = pointerY(e.clientY);
+    maybeServe();
+  });
+  canvas.addEventListener('pointermove', function (e) {
+    if (e.buttons || e.pointerType === 'touch') state.dragY = pointerY(e.clientY);
+  });
+
+  toggle.addEventListener('click', function () {
+    var opening = panel.hidden;
+    panel.hidden = !opening;
+    toggle.setAttribute('aria-expanded', opening ? 'true' : 'false');
+    if (opening) draw();
+  });
+
+  renderBoard();
+  draw();
+  requestAnimationFrame(step);
+})();

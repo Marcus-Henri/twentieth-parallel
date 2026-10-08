@@ -1158,11 +1158,103 @@ img { max-width: 100%; }
 }
 
 
+/* ---- mini Pong easter egg, tucked into the Axion/HotPlay entry ---- */
+.arcade{ margin: 1.5rem 0 1.8rem; }
+.arcade-toggle{
+  display: flex; align-items: center; gap: 0.6rem;
+  width: 100%; text-align: left;
+  font-family: var(--mono); font-size: 0.75rem; line-height: 1.5;
+  color: var(--ink-3); background: none;
+  border: 1px dashed var(--rule); border-radius: 0;
+  padding: 0.7rem 0.9rem; cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+.arcade-toggle:hover{ border-color: var(--accent); color: var(--ink-2); }
+.arcade-toggle-dot{
+  flex: none; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.arcade-panel{
+  margin-top: 0.9rem; padding: 1.1rem;
+  background: color-mix(in srgb, var(--ground) 55%, transparent);
+  border: 1px solid var(--rule);
+  display: grid; gap: 1.1rem;
+}
+@media (min-width: 42rem){
+  .arcade-panel{ grid-template-columns: minmax(0, 1fr) 11rem; align-items: start; }
+}
+.arcade-stage{ position: relative; }
+#pongCanvas{
+  display: block; width: 100%; height: auto; aspect-ratio: 7 / 4;
+  background: var(--ink); border: 1px solid var(--rule);
+  touch-action: none; cursor: pointer;
+}
+.arcade-hud{
+  position: absolute; top: 0.6rem; left: 0; right: 0;
+  display: flex; justify-content: center; gap: 2.4rem;
+  pointer-events: none;
+}
+.arcade-score{ text-align: center; color: var(--ground); opacity: 0.85; }
+.arcade-score span{ display: block; font-family: var(--mono); font-size: 1.6rem; line-height: 1; }
+.arcade-score b{
+  font-family: var(--mono); font-size: 0.5625rem; letter-spacing: 0.14em;
+  text-transform: uppercase; font-weight: 500;
+}
+.arcade-msg{
+  margin: 0.5rem 0 0; font-family: var(--mono); font-size: 0.6875rem;
+  letter-spacing: 0.04em; color: var(--ink-3); text-align: center;
+}
+.arcade-win{
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 0.6rem;
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  text-align: center; padding: 1rem;
+}
+.arcade-win p{ color: var(--ground); font-family: var(--mono); font-size: 0.8125rem; margin: 0; }
+.arcade-win label{ color: var(--ground); font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.arcade-win input{
+  display: block; margin-top: 0.4rem; width: 4.5rem; text-align: center; text-transform: uppercase;
+  font-family: var(--mono); font-size: 1rem; letter-spacing: 0.3em;
+  background: transparent; color: var(--ground);
+  border: 1px solid var(--rule-soft); border-radius: 0; padding: 0.4rem;
+}
+.arcade-win input:focus{ outline: none; border-color: var(--accent); }
+.arcade-win div{ display: flex; gap: 0.5rem; }
+.arcade-win button{
+  font-family: var(--mono); font-size: 0.625rem; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+  border-radius: 0; padding: 0.5rem 0.9rem;
+}
+#pongSave{ color: var(--ground); background: var(--accent); border: 1px solid var(--accent); }
+#pongSkip{ color: var(--ground); background: none; border: 1px solid var(--rule-soft); opacity: 0.8; }
+.arcade-board h4{
+  font-family: var(--mono); font-size: 0.6875rem; font-weight: 500;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3);
+  margin: 0 0 0.6rem;
+}
+.arcade-board h4 span{ text-transform: none; letter-spacing: 0; opacity: 0.7; }
+.arcade-list{ margin: 0; padding: 0; list-style: none; font-family: var(--mono); font-size: 0.75rem; }
+.arcade-list li{
+  display: flex; justify-content: space-between; gap: 0.5rem;
+  padding: 0.3rem 0; border-bottom: 1px solid var(--rule-soft);
+  color: var(--ink-2);
+}
+.arcade-list li:first-child{ color: var(--accent); }
+.arcade-empty{ color: var(--ink-3); font-style: italic; justify-content: flex-start !important; }
+@media (max-width: 640px){
+  .arcade-score span{ font-size: 1.25rem; }
+  .arcade-panel{ padding: 0.8rem; }
+}
+@media (prefers-reduced-motion: reduce){
+  #pongCanvas{ cursor: default; }
+}
+
 /* ============ print ============ */
 @media print{
   :root{ color-scheme: light; }
   body{ background: #fff; color: #000; }
-  .nav, #progress, #lb, .enquire, .now-cta, .pdrum-wrap, #pdrumZoom{ display: none !important; }
+  .nav, #progress, #lb, .enquire, .now-cta, .pdrum-wrap, #pdrumZoom, .arcade{ display: none !important; }
   a{ color: inherit; text-decoration: underline; }
   .main{ max-width: none; margin: 0; padding: 0 0.5in; }
   .masthead .portrait img{ max-width: 2in; }

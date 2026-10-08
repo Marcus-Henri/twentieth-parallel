@@ -271,6 +271,35 @@
           </ul>
         </article>
 
+        <div class="arcade" id="pongArcade">
+          <button class="arcade-toggle" id="pongToggle" type="button" aria-expanded="false" aria-controls="pongPanel">
+            <span class="arcade-toggle-dot" aria-hidden="true"></span>
+            A mini Pong table hides here, left over from the gaming years &mdash; play, if you'd like a break from the r&eacute;sum&eacute;.
+          </button>
+          <div class="arcade-panel" id="pongPanel" hidden>
+            <div class="arcade-stage">
+              <canvas id="pongCanvas" width="560" height="320" aria-label="Pong game: use arrow keys, W and S, or drag on the table to move your paddle"></canvas>
+              <div class="arcade-hud" aria-hidden="true">
+                <div class="arcade-score"><span id="pongScoreYou">0</span><b>you</b></div>
+                <div class="arcade-score"><span id="pongScoreCpu">0</span><b>house</b></div>
+              </div>
+              <div class="arcade-win" id="pongWin" hidden>
+                <p id="pongWinText"></p>
+                <label>Initials <input id="pongInitials" maxlength="3" autocomplete="off" spellcheck="false" inputmode="latin" pattern="[A-Za-z]*" aria-label="Your initials, up to three letters"></label>
+                <div>
+                  <button type="button" id="pongSave">Save score</button>
+                  <button type="button" id="pongSkip">Skip</button>
+                </div>
+              </div>
+              <p class="arcade-msg" id="pongMsg" aria-live="polite">Click, tap, or press any key to serve.</p>
+            </div>
+            <div class="arcade-board">
+              <h4>High Scores <span>— this device</span></h4>
+              <ol id="pongBoard" class="arcade-list"><li class="arcade-empty">No winners yet. Be the first.</li></ol>
+            </div>
+          </div>
+        </div>
+
       <blockquote class="marg marg--slab">
         <p>The less you bet, the more you lose when you win.</p>
         <cite>Wyatt Earp</cite>
