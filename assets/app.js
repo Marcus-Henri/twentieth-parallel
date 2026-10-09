@@ -160,7 +160,7 @@
   })();
 
 /* ---- photo tower: one flipping wall of photos, used in Seen and Made ---- */
-var pdrumZoomOpen = false;
+var pdrumZoomIm = null, pdrumZoomOpen = false;
 var pdrumLastFocus = null;
 var pdrumCloseHooks = []; /* callbacks to run once the zoom view is closed */
 
@@ -184,7 +184,7 @@ function openPdrumZoom(im, drum, tile) {
   var img = document.getElementById('pdrumZoomImg');
   var cap = document.getElementById('pdrumZoomCap');
   var card = overlay.querySelector('.pdrum-zoom-card');
-  pdrumLastFocus = document.activeElement;
+  pdrumLastFocus = document.activeElement; pdrumZoomIm = im;
   var oldStage = overlay.querySelector('.pdrum-zoom-styled');
   if (oldStage) { oldStage.parentNode.removeChild(oldStage); }
   img.src = im.src; img.alt = im.title; cap.textContent = im.title;
@@ -269,6 +269,7 @@ var PD_STYLES = [
    showing something different. The swap itself is never visible; only the
    result of it, arriving a few seconds later, is. */
 window.buildPhotoDrum = function (containerId, images, direction) {
+  window.pdImageSrcs = images.map(function (i) { return i.src; });
   var container = document.getElementById(containerId);
   if (!container || !images || !images.length) { return; }
 
@@ -1114,19 +1115,39 @@ window.pdShare = (function () {
     c.lineJoin = 'round'; c.lineWidth = size * 0.16; c.strokeStyle = '#111'; c.strokeText(txt, size * 0.05, size * 0.05);
     c.lineWidth = size * 0.12; c.strokeText(txt, 0, 0); c.fillStyle = fill; c.fillText(txt, 0, 0); c.restore();
   }
-  function paint(kind, n, srcs, done) {
+  function cfgFor(kind, n, og, title) {
+    if (og) {
+      return kind === 'tiles' ? { a: 'CATCH THE', big: 'TILES!', b: 'IF YOU CAN' }
+           : kind === 'tetris' ? { a: 'BEAT MY', big: 'TETRIS', b: 'SCORE!' }
+           : kind === 'pong' ? { a: 'BEAT THE', big: 'HOUSE', b: 'AT PONG!' }
+           : kind === 'art' ? { a: 'MARCUS HENRI', big: 'ART!', b: '(AND CHAOS)' }
+           : { a: 'A WEBSITE WITH', big: 'A STORM', b: 'INSIDE IT!' };
+    }
+    return kind === 'tiles' ? { a: 'I CAUGHT', big: String(n), b: n === 1 ? 'FLYING TILE!' : 'FLYING TILES!' }
+         : kind === 'tetris' ? { a: 'I SCORED', big: String(n), b: 'AT TETRIS!' }
+         : kind === 'pong' ? { a: 'I BEAT THE HOUSE', big: '11\u2013' + n, b: 'AT PONG!' }
+         : kind === 'art' ? { a: 'FOUND THIS', big: 'ART!', b: 'MARCUS HENRI' }
+         : { a: 'A WEBSITE WITH', big: 'A STORM', b: 'INSIDE IT!' };
+  }
+  function paint(kind, n, srcs, done, og) {
     var cv = document.createElement('canvas'); cv.width = 1200; cv.height = 630;
     var c = cv.getContext('2d'); if (!c) { done(null); return; }
-    var cfg = kind === 'tiles' ? { a: 'I CAUGHT', big: String(n), b: n === 1 ? 'FLYING TILE!' : 'FLYING TILES!' }
-            : kind === 'tetris' ? { a: 'I SCORED', big: String(n), b: 'AT TETRIS!' }
-            : { a: 'I BEAT THE HOUSE', big: '11–' + n, b: 'AT PONG!' };
+    var cfg = cfgFor(kind, n, og);
     c.fillStyle = '#ffd92e'; c.fillRect(0, 0, 1200, 630);
     dots(c, 0, 0, 1200, 630, 26, 7.5, '#f0452c');
     /* photos (only the tile card): tilted, white-bordered, outlined like comic panels */
     var imgs = [], pending = 0;
     function drawRest() {
       var i;
-      if (imgs.length) {
+      if (kind === 'art' && imgs.length === 1) {
+        var ia = imgs[0], aw = 400, ah = 400 * (ia.naturalHeight / ia.naturalWidth || 0.75);
+        if (ah > 400) { ah = 400; aw = 400 * (ia.naturalWidth / ia.naturalHeight); }
+        c.save(); c.translate(900, 300); c.rotate(0.05);
+        c.fillStyle = 'rgba(0,0,0,.5)'; c.fillRect(-aw / 2 + 11, -ah / 2 + 11, aw + 28, ah + 28);
+        c.fillStyle = '#fff'; c.fillRect(-aw / 2 - 14, -ah / 2 - 14, aw + 28, ah + 28);
+        c.lineWidth = 6; c.strokeStyle = '#111'; c.strokeRect(-aw / 2 - 14, -ah / 2 - 14, aw + 28, ah + 28);
+        c.drawImage(ia, -aw / 2, -ah / 2, aw, ah); c.restore();
+      } else if (imgs.length) {
         var spots = [[860, 150, 8], [1000, 300, -7], [820, 360, -4], [1010, 500, 6], [700, 215, 5]];
         for (i = 0; i < imgs.length && i < 5; i++) {
           var im = imgs[i], w = 230, h = 230 * (im.naturalHeight / im.naturalWidth || 0.75), sp = spots[i];
@@ -1143,7 +1164,7 @@ window.pdShare = (function () {
         pcs.forEach(function (p, k) { c.fillStyle = cols[k % 3]; c.fillRect(p[0] * 90, p[1] * 90, 86, 86); c.lineWidth = 6; c.strokeStyle = '#111'; c.strokeRect(p[0] * 90, p[1] * 90, 86, 86); });
         c.restore();
         c.save(); c.translate(920, 410); c.rotate(0.15); [[0, 0], [0, 1], [1, 1], [0, 2]].forEach(function (p, k) { c.fillStyle = ['#1f5fbf', '#e8312f', '#fff'][k % 3]; c.fillRect(p[0] * 80, p[1] * 80, 76, 76); c.lineWidth = 6; c.strokeStyle = '#111'; c.strokeRect(p[0] * 80, p[1] * 80, 76, 76); }); c.restore();
-      } else {
+      } else if (kind === 'pong') {
         c.fillStyle = '#fff'; c.lineWidth = 6; c.strokeStyle = '#111';
         c.fillRect(780, 150, 28, 170); c.strokeRect(780, 150, 28, 170); c.fillRect(1090, 250, 28, 170); c.strokeRect(1090, 250, 28, 170);
         c.beginPath(); c.arc(940, 330, 30, 0, 6.2832); c.fillStyle = '#e8312f'; c.fill(); c.stroke();
@@ -1164,7 +1185,7 @@ window.pdShare = (function () {
       c.beginPath(); c.moveTo(bx + rr, by); c.lineTo(bx + bw - rr, by); c.quadraticCurveTo(bx + bw, by, bx + bw, by + rr); c.lineTo(bx + bw, by + bh - rr); c.quadraticCurveTo(bx + bw, by + bh, bx + bw - rr, by + bh);
       c.lineTo(bx + 120, by + bh); c.lineTo(bx + 70, by + bh + 32); c.lineTo(bx + 80, by + bh); c.lineTo(bx + rr, by + bh); c.quadraticCurveTo(bx, by + bh, bx, by + bh - rr); c.lineTo(bx, by + rr); c.quadraticCurveTo(bx, by, bx + rr, by); c.closePath();
       c.fill(); c.stroke(); c.restore();
-      c.font = '900 46px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#111'; c.fillText('CAN YOU BEAT THAT?', 790, 524);
+      c.font = '900 46px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#111'; c.fillText(kind === 'art' || kind === 'site' ? 'GO ON, HAVE A LOOK!' : 'CAN YOU BEAT THAT?', 790, 524);
       /* brand caption box, top-left, like a comic's opening panel */
       c.save(); c.translate(36, 30); c.rotate(-0.03); c.fillStyle = '#111'; c.fillRect(6, 6, 340, 62); c.fillStyle = '#fff'; c.fillRect(0, 0, 340, 62); c.lineWidth = 5; c.strokeStyle = '#111'; c.strokeRect(0, 0, 340, 62);
       c.font = '900 30px ' + FONT; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillStyle = '#e8312f'; c.fillText('MARCUS HENRI', 16, 24);
@@ -1185,50 +1206,63 @@ window.pdShare = (function () {
     if (!pending) { drawRest(); }
   }
 
-  function show(kind, n, srcs) {
-    var head, text, ref = kind, sub;
-    if (kind === 'tiles') { head = 'POW! ' + n + ' runaway tiles caught!'; sub = 'Marcus Henri’s tiles have escaped before. Nobody caught them like you did. Brag a little.'; text = 'I just caught ' + n + ' of Marcus Henri’s runaway tiles at The 20th Parallel 🌪️ Bet you can’t beat that:'; }
-    else if (kind === 'tetris') { head = 'KA-BLAM! New best: ' + n; sub = 'Marcus Henri hid a Tetris in his website. You just owned it. Tell the group chat.'; text = 'I scored ' + n + ' at Tetris on Marcus Henri’s 20th Parallel 🧱 Your move:'; }
-    else { head = 'WHAAM! You beat the house!'; sub = 'Eleven points to ' + n + ', on a personal website. Gloat responsibly.'; text = 'I beat the house at Pong, 11–' + n + ', on Marcus Henri’s 20th Parallel 🏓 Can you?'; }
-    var link = SITE + '?ref=' + ref, full = text + ' ' + link, e = encodeURIComponent, blob = null;
+  var COPY = {
+    tiles:  function (n) { return { head: 'POW! ' + n + ' runaway tiles caught!', ask: 'Dare a friend', text: 'I just caught ' + n + ' of Marcus Henri’s runaway tiles at The 20th Parallel 💥 Bet you can’t beat that:' }; },
+    tetris: function (n) { return { head: 'KA-BLAM! New best: ' + n, ask: 'Dare a friend', text: 'I scored ' + n + ' at Tetris on Marcus Henri’s 20th Parallel 🧱 Your move:' }; },
+    pong:   function (n) { return { head: 'WHAAM! You beat the house!', ask: 'Dare a friend', text: 'I beat the house at Pong, 11–' + n + ', on Marcus Henri’s 20th Parallel 🏓 Can you?' }; },
+    art:    function ()  { return { head: 'Good one. Send it on!', ask: 'Send it to a friend', text: 'Look at this, from Marcus Henri’s 20th Parallel 🎨 The site has a tornado of tiles, too:' }; },
+    site:   function ()  { return { head: 'Know someone who’d love this?', ask: 'Send it to a friend', text: 'Marcus Henri built a website with a tornado, Tetris, Pong and an art tower that spins out of control 💥 Try to catch a tile:' }; }
+  };
+  function linkFor(kind, n) { return SITE + 's/' + kind + '.html' + (n && (kind === 'tiles' || kind === 'tetris' || kind === 'pong') ? '?beat=' + encodeURIComponent(n) : ''); }
+  function show(kind, n, srcs, opts) {
+    var cp0 = (COPY[kind] || COPY.site)(n), text = cp0.text, link = linkFor(kind, n), full = text + ' ' + link, e = encodeURIComponent, blob = null;
+    if (!srcs || !srcs.length) { srcs = (window.pdImageSrcs || []).slice().sort(function () { return Math.random() - 0.5; }).slice(0, 5); }
     if (!panel) {
-      panel = mk('div', 'pd-share'); panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Share your score');
+      panel = mk('div', 'pd-share'); panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Pass it on');
       document.body.appendChild(panel);
     }
     panel.innerHTML = '';
     var x = mk('button', 'pd-share-x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Close'); x.addEventListener('click', hide);
     var holder = mk('div', 'pd-share-card');
-    panel.appendChild(holder); panel.appendChild(x);
-    panel.appendChild(mk('p', 'pd-share-head', head));
-    panel.appendChild(mk('p', 'pd-share-text', sub));
-    var row = mk('div', 'pd-share-row');
-    function btn(label, fn, cls) { var b = mk('button', cls || '', label); b.type = 'button'; b.addEventListener('click', fn); row.appendChild(b); return b; }
-    function go(href) { return function () { window.open(href, '_blank', 'noopener'); }; }
-    var file = null;
+    var ask = mk('button', 'pd-share-main'); ask.type = 'button';
+    ask.innerHTML = '<span class="pd-share-ask">' + cp0.ask + '</span><span class="pd-share-sub">one tap, link included</span>';
+    panel.appendChild(holder); panel.appendChild(mk('p', 'pd-share-head', cp0.head)); panel.appendChild(ask); panel.appendChild(x);
     function fileOf() { return blob ? new File([blob], 'twentieth-parallel-' + kind + '.png', { type: 'image/png' }) : null; }
-    var shareBtn = btn('🚀 Share the card', function () {
+    function nativeShare() {
       var f = fileOf();
-      if (f && navigator.canShare && navigator.canShare({ files: [f] })) { navigator.share({ files: [f], title: 'The 20th Parallel', text: full }).catch(function () {}); }
-      else if (navigator.share) { navigator.share({ title: 'The 20th Parallel', text: text, url: link }).catch(function () {}); }
-      else { cp.click(); }
-    }, 'pd-share-main');
-    var save = btn('💾 Save image', function () {
+      if (f && navigator.canShare && navigator.canShare({ files: [f] })) { return navigator.share({ files: [f], title: 'The 20th Parallel', text: full }); }
+      if (navigator.share) { return navigator.share({ title: 'The 20th Parallel', text: text, url: link }); }
+      return null;
+    }
+    ask.addEventListener('click', function () {
+      var p = null; try { p = nativeShare(); } catch (er) {}
+      if (p && p.catch) { p.catch(function () {}); }
+      else if (!p) { window.open('https://wa.me/?text=' + e(full), '_blank', 'noopener'); }
+      try { if (navigator.vibrate) { navigator.vibrate(20); } } catch (er) {}
+    });
+    var row = mk('div', 'pd-share-icons');
+    function ico(label, glyph, cls, href) { var a = mk('a', 'pd-ico ' + cls); a.href = href; a.target = '_blank'; a.rel = 'noopener'; a.setAttribute('aria-label', 'Share on ' + label); a.title = label; a.innerHTML = '<b>' + glyph + '</b><i>' + label + '</i>'; row.appendChild(a); }
+    ico('WhatsApp', '💬', 'pd-ico-wa', 'https://wa.me/?text=' + e(full));
+    ico('X', '𝕏', 'pd-ico-x', 'https://twitter.com/intent/tweet?text=' + e(text) + '&url=' + e(link));
+    ico('Facebook', 'f', 'pd-ico-fb', 'https://www.facebook.com/sharer/sharer.php?u=' + e(link) + '&quote=' + e(text));
+    ico('LinkedIn', 'in', 'pd-ico-li', 'https://www.linkedin.com/sharing/share-offsite/?url=' + e(link));
+    ico('Email', '✉', 'pd-ico-em', 'mailto:?subject=' + e('You have to see this') + '&body=' + e(full));
+    panel.appendChild(row);
+    var more = mk('div', 'pd-share-more');
+    var save = mk('button', '', '💾 Save the card'); save.type = 'button'; save.hidden = true;
+    save.addEventListener('click', function () {
       if (!blob) { return; }
       if (blobUrl) { URL.revokeObjectURL(blobUrl); }
       blobUrl = URL.createObjectURL(blob);
       var a = document.createElement('a'); a.href = blobUrl; a.download = 'twentieth-parallel-' + kind + '.png'; document.body.appendChild(a); a.click(); a.remove();
     });
-    save.hidden = true;
-    btn('𝕏 X', go('https://twitter.com/intent/tweet?text=' + e(text) + '&url=' + e(link)), 'pd-sh-x');
-    btn('💬 WhatsApp', go('https://wa.me/?text=' + e(full)), 'pd-sh-wa');
-    btn('👍 Facebook', go('https://www.facebook.com/sharer/sharer.php?u=' + e(link) + '&quote=' + e(text)), 'pd-sh-fb');
-    btn('💼 LinkedIn', go('https://www.linkedin.com/sharing/share-offsite/?url=' + e(link)), 'pd-sh-li');
-    var cp = btn('📋 Copy text', function () {
-      var done = function () { cp.textContent = '✅ Copied!'; setTimeout(function () { cp.textContent = '📋 Copy text'; }, 1800); };
+    var cp = mk('button', '', '📋 Copy link'); cp.type = 'button';
+    cp.addEventListener('click', function () {
+      var done = function () { cp.textContent = '✅ Copied!'; setTimeout(function () { cp.textContent = '📋 Copy link'; }, 1800); };
       if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(full).then(done, function () { window.prompt('Copy this:', full); }); }
       else { window.prompt('Copy this:', full); }
     });
-    panel.appendChild(row);
+    more.appendChild(save); more.appendChild(cp); panel.appendChild(more);
     panel.hidden = false; panel.classList.remove('pd-pop'); void panel.offsetWidth; panel.classList.add('pd-pop');
     try { if (window.tpSound) { window.tpSound.tone(392, 0.09, 'square', 0.06); window.tpSound.tone(523, 0.09, 'square', 0.06, 0.09); window.tpSound.tone(784, 0.2, 'square', 0.07, 0.18); } } catch (er) {}
     paint(kind, n, srcs, function (cv) {
@@ -1236,10 +1270,46 @@ window.pdShare = (function () {
       cv.className = 'pd-share-canvas'; cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', text);
       holder.appendChild(cv);
       try { cv.toBlob(function (b) { blob = b; if (b) { save.hidden = false; } }, 'image/png'); } catch (er) {}
-    });
-    clearTimeout(timer); timer = setTimeout(hide, 60000);
+    }, false);
+    clearTimeout(timer); timer = setTimeout(hide, 90000);
   }
-  return { show: show, hide: hide };
+  return { show: show, hide: hide, paint: paint, panelOpen: function () { return !!panel && !panel.hidden; } };
+})();
+
+/* ---- a friend's challenge: arriving via a shared link with ?beat=N shows a playful banner and a button
+   that drops you straight into the game, so a shared score becomes a dare ---- */
+(function () {
+  var q; try { q = new URLSearchParams(window.location.search); } catch (e) { return; }
+  var ref = q.get('ref'), beat = parseInt(q.get('beat'), 10);
+  if (!ref || !beat || !/^(tiles|tetris|pong)$/.test(ref)) { return; }
+  var msg = ref === 'tiles' ? 'A friend caught ' + beat + ' of the flying tiles. Can you beat that?'
+          : ref === 'tetris' ? 'A friend scored ' + beat + ' at Tetris here. Can you beat that?'
+          : 'A friend beat the house at Pong, 11–' + beat + '. Think you can?';
+  var bar = document.createElement('div'); bar.className = 'pd-dare'; bar.setAttribute('role', 'status');
+  bar.innerHTML = '<span class="pd-dare-t"></span><button type="button" class="pd-dare-go">Take the dare</button><button type="button" class="pd-dare-x" aria-label="Dismiss">×</button>';
+  bar.firstChild.textContent = '💥 ' + msg;
+  function put() { document.body.appendChild(bar); }
+  if (document.body) { put(); } else { document.addEventListener('DOMContentLoaded', put); }
+  bar.querySelector('.pd-dare-x').addEventListener('click', function () { bar.remove(); });
+  bar.querySelector('.pd-dare-go').addEventListener('click', function () {
+    bar.remove();
+    var t = document.getElementById(ref === 'tiles' ? 'photoTower' : ref === 'tetris' ? 'tetris' : 'pongPanel');
+    if (t && t.scrollIntoView) { t.scrollIntoView({ behavior: 'smooth', block: ref === 'tetris' ? 'start' : 'center' }); }
+    if (ref === 'tiles') { setTimeout(function () { var b = document.querySelector('.pd-storm'); if (b && !b.hidden) { b.click(); } }, 700); }
+    if (window.tpSound && window.tpSound.unlock) { window.tpSound.unlock(); }
+  });
+})();
+
+/* ---- a small "pass it on" sticker that appears once someone has spent a little while here ---- */
+(function () {
+  var seen = false; try { seen = window.sessionStorage.getItem('tp_pass_v1') === '1'; } catch (e) {}
+  setTimeout(function () {
+    if (!window.pdShare) { return; }
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'pd-pass'; b.innerHTML = '<span>📣</span> Pass it on';
+    b.addEventListener('click', function () { window.pdShare.show(window.__pdShareKind || 'site', 0); try { window.sessionStorage.setItem('tp_pass_v1', '1'); } catch (e) {} });
+    document.body.appendChild(b);
+    if (!seen) { b.classList.add('pd-pass-wiggle'); }
+  }, 25000);
 })();
 
 /* ---- a mini Pong table, tucked into the Axion/HotPlay entry: human vs a
@@ -1859,4 +1929,12 @@ window.pdShare = (function () {
 
   stats(); draw();
   requestAnimationFrame(frame);
+})();
+
+
+/* "Send to a friend" inside the enlarged picture: the moment someone is enjoying a piece is the moment to pass it on */
+(function () {
+  var b = document.getElementById('pdrumZoomShare');
+  if (!b) { return; }
+  b.addEventListener('click', function () { if (pdrumZoomIm && window.pdShare) { window.pdShare.show('art', 0, [pdrumZoomIm.src]); } });
 })();

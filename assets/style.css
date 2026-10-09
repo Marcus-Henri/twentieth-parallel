@@ -1760,6 +1760,39 @@ a.vid + a.vid{ margin-top:1.75rem; }
 .pd-share-row button{ font-size:.82rem; }
 .pd-share-row button:hover{ transform:rotate(-1.5deg) scale(1.04); }
 .pd-share-row button:active{ transform:translate(3px,3px); }
+/* ---- share panel v2: one comic panel, one big ask, round brand icons ---- */
+.pd-share-main{ display:block; width:100%; margin:.2rem 0 .75rem; padding:.7rem 1rem .65rem; text-align:center; cursor:pointer; color:#fff; background:radial-gradient(circle,rgba(255,226,31,.35) 26%,transparent 30%) 0 0/10px 10px,#e8312f; border:4px solid #111; border-radius:14px 14px 14px 4px; box-shadow:5px 5px 0 #111; transition:transform .12s ease,box-shadow .12s ease; }
+.pd-share-main:hover{ transform:rotate(-1deg) scale(1.02); }
+.pd-share-main:active{ transform:translate(3px,3px); box-shadow:2px 2px 0 #111; }
+.pd-share-ask{ display:block; font:900 1.6rem/1 Impact,"Arial Black",sans-serif; letter-spacing:.02em; text-transform:uppercase; text-shadow:2px 2px 0 #111; }
+.pd-share-sub{ display:block; margin-top:.3rem; font:700 .72rem/1 "Courier New",monospace; letter-spacing:.08em; text-transform:uppercase; color:#ffe21f; text-shadow:1px 1px 0 #111; }
+.pd-share-icons{ display:flex; justify-content:space-between; gap:.4rem; margin:0 0 .65rem; }
+.pd-ico{ flex:1 1 0; display:flex; flex-direction:column; align-items:center; gap:.25rem; text-decoration:none; color:#111; }
+.pd-ico b{ display:flex; align-items:center; justify-content:center; width:3rem; height:3rem; border:3px solid #111; border-radius:50%; box-shadow:3px 3px 0 #111; font:900 1.25rem/1 Impact,"Arial Black",sans-serif; color:#fff; transition:transform .12s ease; }
+.pd-ico i{ font:700 .62rem/1 "Courier New",monospace; font-style:normal; letter-spacing:.04em; text-transform:uppercase; }
+.pd-ico:hover b{ transform:translateY(-3px) rotate(-6deg); }
+.pd-ico:active b{ transform:translate(2px,2px); box-shadow:1px 1px 0 #111; }
+.pd-ico-wa b{ background:#25d366; } .pd-ico-x b{ background:#111; } .pd-ico-fb b{ background:#1877f2; } .pd-ico-li b{ background:#0a66c2; } .pd-ico-em b{ background:#ffb300; color:#111; }
+.pd-share-more{ display:flex; justify-content:center; gap:1.2rem; flex-wrap:wrap; }
+.pd-share-more button{ background:none; border:0; padding:.3rem .2rem; cursor:pointer; font:700 .75rem/1 "Courier New",monospace; letter-spacing:.04em; text-transform:uppercase; color:#111; text-decoration:underline; text-underline-offset:3px; }
+.pd-share-more button[hidden]{ display:none; }
+.pd-share-head{ transform:rotate(-1.2deg); margin:.1rem 1.4rem .5rem 0; }
+.pd-share-card{ transform:rotate(.6deg); box-shadow:5px 5px 0 #111; }
+/* arrival banner for a friend's dare */
+.pd-dare{ position:fixed; z-index:9997; left:50%; top:.8rem; transform:translateX(-50%); display:flex; align-items:center; gap:.7rem; max-width:min(94vw,40rem); padding:.6rem .8rem; background:#ffe21f; color:#111; border:4px solid #111; border-radius:6px; box-shadow:5px 5px 0 #111; font:700 .95rem/1.25 "Helvetica Neue",Arial,sans-serif; animation:pdShareIn .5s cubic-bezier(.3,1.5,.5,1); }
+.pd-dare-t{ flex:1 1 auto; }
+.pd-dare-go{ flex:none; cursor:pointer; padding:.5rem .8rem; background:#e8312f; color:#fff; border:3px solid #111; border-radius:4px; box-shadow:3px 3px 0 #111; font:900 1rem/1 Impact,"Arial Black",sans-serif; text-transform:uppercase; letter-spacing:.02em; }
+.pd-dare-x{ flex:none; background:none; border:0; font-size:1.4rem; line-height:1; cursor:pointer; color:#111; }
+/* sticker that appears after a little while */
+.pd-pass{ position:fixed; z-index:70; right:1rem; bottom:1rem; cursor:pointer; padding:.55rem .9rem; background:#ffe21f; color:#111; border:3px solid #111; border-radius:30px; box-shadow:4px 4px 0 #111; font:900 1rem/1 Impact,"Arial Black",sans-serif; text-transform:uppercase; letter-spacing:.03em; transform:rotate(-3deg); animation:pdShareIn .5s cubic-bezier(.3,1.5,.5,1); }
+.pd-pass:hover{ transform:rotate(2deg) scale(1.06); }
+.pd-pass-wiggle{ animation:pdShareIn .5s cubic-bezier(.3,1.5,.5,1), pdWiggle 6s 3s ease-in-out infinite; }
+@keyframes pdWiggle{ 0%,90%,100%{ transform:rotate(-3deg) } 93%{ transform:rotate(5deg) scale(1.08) } 96%{ transform:rotate(-7deg) scale(1.08) } }
+.pdrum-zoom-share{ font:inherit; cursor:pointer; margin-right:.6rem; color:#111; background:#ffe21f; border:2px solid #111; border-radius:3px; padding:.3rem .7rem; font-weight:700; box-shadow:2px 2px 0 #111; }
+.pdrum-zoom-share:hover{ background:#ffd000; }
+.pdrum-zoom{ z-index:50; } .pd-share{ z-index:9999; }
+@media (max-width:480px){ .pd-pass{ bottom:.6rem; right:.6rem; } .pd-share-ask{ font-size:1.35rem; } }
+@media (prefers-reduced-motion:reduce){ .pd-pass-wiggle,.pd-pass,.pd-dare{ animation:none; } }
 /* ============ print ============ */
 @media print{
   :root{ color-scheme: light; }
