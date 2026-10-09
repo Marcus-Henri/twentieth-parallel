@@ -208,7 +208,12 @@ var PD_STYLES = [
   { key: 'vangogh', className: 'pd-style-vangogh', label: 'after van Gogh' },
   { key: 'fauvist', className: 'pd-style-fauvist', label: 'fauvist pass' },
   { key: 'pointillist', className: 'pd-style-pointillist', label: 'pointillist pass' },
-  { key: 'basquiat', className: 'pd-style-basquiat', label: 'basquiat pass, for laughs' }
+  { key: 'basquiat', className: 'pd-style-basquiat', label: 'basquiat pass, for laughs' },
+    { key: 'ukiyo', className: 'pd-style-ukiyo', label: 'woodblock pass, ukiyo-e' },
+    { key: 'warhol', className: 'pd-style-warhol', label: 'pop-art pass, after Warhol' },
+    { key: 'klimt', className: 'pd-style-klimt', label: 'gold-leaf pass, after Klimt' },
+    { key: 'mondrian', className: 'pd-style-mondrian', label: 'grid pass, after Mondrian' },
+    { key: 'comic', className: 'pd-style-comic', label: 'comic pass, after Lichtenstein' }
 ];
 
 /* builds ONE gigantic tower: containerId is an empty .pdrum-frame element,
