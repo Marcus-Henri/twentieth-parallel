@@ -420,9 +420,13 @@ window.buildPhotoDrum = function (containerId, images, direction) {
      FLY_AT times the base speed the pictures begin to tear loose, one at a
      time, and are carried off in the direction of the wind. When the last
      one has gone the drum rests a moment, then fills again and starts over. ---- */
-  var BOOST = 1.15, STEP = 1.05, FLY_AT = 2.0, MAX_MUL = 3.2;
+  var BOOST = 1.30, STEP = 1.15, FLY_AT = 2.0, MAX_MUL = 4;
   var stormOn = false, nextFling = 0, flingGap = 1600, resetAt = 0;
-  function speedMul() { return BOOST * Math.pow(STEP, Math.floor(Math.abs(rotation) / 360)); }
+  var spinTurns = 0; /* full turns made since the last reset, fractions included */
+  /* the speed grows continuously, never in steps: it is 30% over base to start,
+     and exactly 15% higher again after each full turn, so there is no jolt
+     at any point on the way up */
+  function speedMul() { return BOOST * Math.pow(STEP, spinTurns); }
   function flyAway(tile) {
     var r = tile.getBoundingClientRect();
     if (r.width < 6 || r.height < 6 || !tile.animate) { return false; }
@@ -461,7 +465,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   }
   function calmAfterStorm() {
     stormOn = false; resetAt = 0; flingGap = 1600;
-    rotation = rotation % 360; revolved = false;
+    rotation = rotation % 360; spinTurns = 0; revolved = false;
     images.forEach(function (im) { im._pdStep = null; });
     for (var i = 0; i < cols.length; i++) { fillFace(cols[i]); }
     drum.classList.remove('pd-regen'); void drum.offsetWidth; drum.classList.add('pd-regen');
@@ -482,7 +486,8 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     var dt = Math.min(t - lastT, 100);
     lastT = t;
     if (!paused && !pdrumZoomOpen) {
-      rotation += degPerMs * Math.min(speedMul(), MAX_MUL) * dt;
+      var step = degPerMs * Math.min(speedMul(), MAX_MUL) * dt;
+      rotation += step; spinTurns += Math.abs(step) / 360;
       if (!revolved && Math.abs(rotation) >= 360) { revolved = true; }
       drum.style.transform = 'rotateY(' + rotation + 'deg)';
       if (!stormOn) { maybeRefillHiddenFace(t); }
