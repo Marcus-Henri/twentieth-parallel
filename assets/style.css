@@ -1427,6 +1427,7 @@ a.vid:hover .vid-play{ background:rgba(0,0,0,.75); transform:scale(1.07); }
 .vid-credit{ font-family:var(--mono); font-size:0.75rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); }
 .vid-title{ font-family:var(--display); font-size:1.5rem; line-height:1.2; }
 a.vid:hover .vid-title{ color:var(--accent); }
+a.vid + a.vid{ margin-top:1.75rem; }
 .vid-note{ line-height:1.55; }
 .vid-more{ font-family:var(--mono); font-size:0.8125rem; letter-spacing:.08em; color:var(--accent); }
 
