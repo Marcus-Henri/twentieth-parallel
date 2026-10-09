@@ -1700,6 +1700,32 @@ a.vid + a.vid{ margin-top:1.75rem; }
 .pd-return span{ display:block; margin-top:.6rem; font-family:var(--mono); font-style:normal; font-size:.75rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); }
 .pd-return.show{ opacity:1; pointer-events:auto; }
 .pd-return:hover, .pd-return:focus-visible{ color:var(--accent); }
+.tower-col{ transform-style: preserve-3d; }
+.pd-flyer{ cursor: pointer; }
+.pd-bar{ display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; justify-content:center; margin-top:.8rem; font-family:var(--mono); font-size:.75rem; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); }
+.pd-bar button[hidden]{ display:none; }
+.pd-share{ position:fixed; left:50%; bottom:1.2rem; transform:translateX(-50%); z-index:80; width:min(92vw,30rem); box-sizing:border-box; background:var(--ground); color:var(--ink); border:1px solid var(--rule); box-shadow:0 20px 50px -18px rgba(0,0,0,.5); padding:1rem 1.2rem 1.1rem; border-radius:3px; }
+.pd-share[hidden]{ display:none; }
+.pd-share-head{ margin:0 1.5rem .2rem 0; font-family:var(--display); font-size:1.25rem; line-height:1.2; }
+.pd-share-text{ margin:0 0 .8rem; font-size:.9rem; color:var(--ink-2); }
+.pd-share-x{ position:absolute; right:.5rem; top:.35rem; background:none; border:0; font-size:1.5rem; line-height:1; color:var(--ink-3); cursor:pointer; padding:.2rem .5rem; }
+.pd-share-row{ display:flex; flex-wrap:wrap; gap:.45rem; }
+.pd-share-row button{ font-family:var(--mono); font-size:.75rem; letter-spacing:.06em; text-transform:uppercase; color:var(--ink); background:none; border:1px solid var(--rule); border-radius:2px; padding:.45rem .75rem; cursor:pointer; min-height:36px; }
+.pd-share-row button:hover{ border-color:var(--accent); color:var(--accent); }
+/* lightning: flat comic-book flash (Lichtenstein-style Ben-Day dots, black-outlined yellow bolt) */
+.pd-bolt{ position:fixed; inset:0; z-index:9998; pointer-events:none; animation:pdBolt 1s ease-out forwards; }
+.pd-bolt-dots{ position:absolute; inset:0; background:radial-gradient(circle,#ffe21f 38%,transparent 42%) 0 0/16px 16px, #fff7c2; opacity:.55; mix-blend-mode:screen; }
+.pd-bolt-zag{ position:absolute; top:0; width:min(26vw,170px); height:78vh; filter:drop-shadow(5px 5px 0 rgba(0,0,0,.45)); }
+.pd-boom{ position:absolute; top:30%; padding:.55em 1em; font:900 clamp(1.6rem,5vw,3.4rem)/1 Impact,"Arial Black",sans-serif; letter-spacing:.02em; color:#111; background:#ffe21f; border:5px solid #111; clip-path:polygon(0 12%,12% 0,26% 14%,42% 0,56% 14%,72% 0,86% 14%,100% 8%,92% 38%,100% 60%,88% 76%,98% 100%,70% 88%,50% 100%,32% 86%,10% 100%,12% 72%,0 56%,8% 34%); text-shadow:3px 3px 0 #e8312f; transform:rotate(-6deg); }
+@keyframes pdBolt{ 0%{opacity:0} 6%{opacity:1} 30%{opacity:.85} 100%{opacity:0} }
+@media (prefers-reduced-motion:reduce){ .pd-bolt{ animation-duration:.4s; } }
+/* speed nudges at the tower's edges */
+.pd-nudge{ position:absolute; top:42%; z-index:3; width:7.6rem; padding:0; margin:0; background:none; border:0; cursor:pointer; font-family:var(--display); font-style:italic; font-size:1.02rem; line-height:1.25; color:var(--ink-2,inherit); text-decoration:underline; text-decoration-color:var(--accent); text-underline-offset:.22em; text-decoration-thickness:1px; transition:color .2s ease; }
+.pd-nudge--fast{ left:0; text-align:left; }
+.pd-nudge--slow{ right:0; text-align:right; }
+.pd-nudge:hover, .pd-nudge:focus-visible, .pd-nudge.is-on{ color:var(--accent); }
+.pd-nudge-s{ display:block; margin-top:.3rem; font-family:var(--mono); font-style:normal; font-size:.7rem; letter-spacing:.08em; text-decoration:none; }
+@media (max-width:820px){ .pd-nudge{ position:static; display:inline-block; width:auto; margin:.6rem 1rem 0; } .pd-nudge--fast,.pd-nudge--slow{ text-align:center; } }
 /* ============ print ============ */
 @media print{
   :root{ color-scheme: light; }
