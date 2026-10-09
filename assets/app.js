@@ -420,7 +420,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
      FLY_AT times the base speed the pictures begin to tear loose, one at a
      time, and are carried off in the direction of the wind. When the last
      one has gone the drum rests a moment, then fills again and starts over. ---- */
-  var BOOST = 1.30, STEP = 1.15, FLY_AT = 2.0, MAX_MUL = 4;
+  var BOOST = 1.69, STEP = 1.15, FLY_AT = 3.0, MAX_MUL = 5, assembling = false, returnBtn = null;
   var stormOn = false, nextFling = 0, flingGap = 1600, resetAt = 0;
   var spinTurns = 0; /* full turns made since the last reset, fractions included */
   /* the speed grows continuously, never in steps: it is 30% over base to start,
@@ -449,6 +449,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
       { transform: 'translate(' + sx + 'px,' + up + 'px) rotate(' + spin + 'deg) scale(0.2)', opacity: 0 }
     ], { duration: 1700 + Math.random() * 1100, easing: 'cubic-bezier(.45,0,.85,.55)', fill: 'forwards' })
       .onfinish = function () { if (c.parentNode) { c.parentNode.removeChild(c); } };
+    setTimeout(function () { if (c.parentNode) { c.parentNode.removeChild(c); } }, 4500);
     return true;
   }
   function flingOne() {
@@ -463,20 +464,68 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     if (!pool.length) { return false; }
     return flyAway(pool[Math.floor(Math.random() * pool.length)]);
   }
+  /* "bring back the tower": shown the moment the last picture has gone */
+  function showReturn(on) {
+    if (!returnBtn) {
+      returnBtn = document.createElement('button');
+      returnBtn.type = 'button'; returnBtn.className = 'pd-return';
+      returnBtn.innerHTML = 'Bring back the tower<span>click, or just wait a moment</span>';
+      returnBtn.addEventListener('click', function () { if (resetAt) { resetAt = 1; } });
+      scene.appendChild(returnBtn);
+    }
+    returnBtn.classList.toggle('show', !!on);
+  }
+  /* the reverse of the storm: every picture on the near side of the drum flies
+     back in from a random direction and lands exactly where it belongs. The
+     drum holds still while they arrive, then starts its climb again. */
   function calmAfterStorm() {
-    stormOn = false; resetAt = 0; flingGap = 1600;
+    stormOn = false; resetAt = 0; flingGap = 1600; assembling = true;
+    showReturn(false);
     rotation = rotation % 360; spinTurns = 0; revolved = false;
     images.forEach(function (im) { im._pdStep = null; });
     for (var i = 0; i < cols.length; i++) { fillFace(cols[i]); }
-    drum.classList.remove('pd-regen'); void drum.offsetWidth; drum.classList.add('pd-regen');
-  }
-  function runStorm(t) {
+    var W = window.innerWidth, H = window.innerHeight, maxEnd = 0, landing = [], copies = [];
+    for (var ci = 0; ci < cols.length; ci++) {
+      var eff = normalize(cols[ci]._faceAngle + rotation);
+      if (!(eff < 70 || eff > 290)) { continue; }
+      var ts = cols[ci].querySelectorAll('.pdrum-tile');
+      for (var k = 0; k < ts.length; k++) { landing.push(ts[k]); }
+    }
+    landing.forEach(function (tile) {
+      var r = tile.getBoundingClientRect();
+      if (r.width < 6 || r.height < 6 || !tile.animate) { return; }
+      var c = pdCloneTile(tile);
+      c.classList.add('pd-flyer');
+      c.style.position = 'fixed'; c.style.left = r.left + 'px'; c.style.top = r.top + 'px';
+      c.style.width = r.width + 'px'; c.style.height = r.height + 'px';
+      c.style.margin = '0'; c.style.zIndex = '60'; c.style.pointerEvents = 'none';
+      tile.style.visibility = 'hidden';
+      document.body.appendChild(c); copies.push(c);
+      var a = Math.random() * Math.PI * 2, R = Math.max(W, H) * (0.55 + Math.random() * 0.5);
+      var sx = Math.cos(a) * R, sy = Math.sin(a) * R;
+      var spin = (Math.random() < 0.5 ? -1 : 1) * (360 + Math.random() * 720);
+      var delay = Math.random() * 2200, dur = 1500 + Math.random() * 900;
+      maxEnd = Math.max(maxEnd, delay + dur);
+      var an = c.animate([
+        { transform: 'translate(' + sx + 'px,' + sy + 'px) rotate(' + spin + 'deg) scale(0.2)', opacity: 0 },
+        { opacity: 1, offset: 0.35 },
+        { transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1 }
+      ], { duration: dur, delay: delay, easing: 'cubic-bezier(.15,.6,.3,1)', fill: 'both' });
+      an.onfinish = function () { tile.style.visibility = ''; if (c.parentNode) { c.parentNode.removeChild(c); } };
+    });
+    /* safety net, in case a browser never finished the animations */
+    setTimeout(function () {
+      landing.forEach(function (t2) { t2.style.visibility = ''; });
+      copies.forEach(function (c2) { if (c2.parentNode) { c2.parentNode.removeChild(c2); } });
+      assembling = false;
+    }, maxEnd + 400);
+  }  function runStorm(t) {
     if (!stormOn && !resetAt && Math.min(speedMul(), MAX_MUL) >= FLY_AT) { stormOn = true; nextFling = t + 1200; }
     if (stormOn && !resetAt && t >= nextFling) {
       var ok = flingOne();
       nextFling = t + (ok ? flingGap : 120);
       if (ok) { flingGap = Math.max(260, flingGap * 0.93); }
-      if (!drum.querySelector('.pdrum-tile:not(.pd-flown)')) { resetAt = t + 5000; }
+      if (!drum.querySelector('.pdrum-tile:not(.pd-flown)')) { resetAt = t + 3500; showReturn(true); }
     }
     if (resetAt && t >= resetAt) { calmAfterStorm(); }
   }
@@ -485,7 +534,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     if (lastT === null) { lastT = t; }
     var dt = Math.min(t - lastT, 100);
     lastT = t;
-    if (!paused && !pdrumZoomOpen) {
+    if (!paused && !pdrumZoomOpen && !assembling) {
       var step = degPerMs * Math.min(speedMul(), MAX_MUL) * dt;
       rotation += step; spinTurns += Math.abs(step) / 360;
       if (!revolved && Math.abs(rotation) >= 360) { revolved = true; }

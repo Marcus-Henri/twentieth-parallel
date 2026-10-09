@@ -1688,6 +1688,17 @@ a.vid:hover .vid-title{ color:var(--accent); }
 .tower-drum.pd-regen{ animation:pdRegen 1.8s ease both; }
 @keyframes pdRegen{ from{ opacity:0; } to{ opacity:1; } }
 
+.pdrum-tile, .pdrum-tile img{ backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.tower-scene{ position: relative; }
+.pd-return{
+  position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); z-index:5;
+  background:none; border:0; padding:1rem 1.2rem; cursor:pointer; text-align:center;
+  font-family:var(--display); font-style:italic; font-size:clamp(1.5rem,3.4vw,2.4rem); line-height:1.15; color:var(--ink);
+  opacity:0; pointer-events:none; transition:opacity .9s ease;
+}
+.pd-return span{ display:block; margin-top:.6rem; font-family:var(--mono); font-style:normal; font-size:.75rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); }
+.pd-return.show{ opacity:1; pointer-events:auto; }
+.pd-return:hover, .pd-return:focus-visible{ color:var(--accent); }
 /* ============ print ============ */
 @media print{
   :root{ color-scheme: light; }
