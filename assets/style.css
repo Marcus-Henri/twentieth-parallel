@@ -1430,6 +1430,9 @@ a.vid:hover .vid-title{ color:var(--accent); }
 .vid-note{ line-height:1.55; }
 .vid-more{ font-family:var(--mono); font-size:0.8125rem; letter-spacing:.08em; color:var(--accent); }
 
+.find-img--meme{ max-width:434px; }
+.find-img--meme img{ width:100%; height:auto; }
+
 /* ============ print ============ */
 @media print{
   :root{ color-scheme: light; }
