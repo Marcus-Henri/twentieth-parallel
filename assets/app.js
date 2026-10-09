@@ -426,7 +426,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
      time, and are carried off in the direction of the wind. When the last
      one has gone the drum rests a moment, then fills again and starts over. ---- */
   var BOOST = 1.69, STEP = 1.15, FLY_AT = 3.0, MAX_MUL = 5, assembling = false, returnBtn = null,
-      caught = 0, nextShareAt = 5, spinTarget = 0, gestured = false, barClock = null, barStorm = null;
+      caught = 0, caughtSrcs = [], nextShareAt = 5, spinTarget = 0, gestured = false, barClock = null, barStorm = null;
   var stormOn = false, nextFling = 0, flingGap = 1600, resetAt = 0;
   var spinTurns = 0; /* full turns made since the last reset, fractions included */
   /* the speed grows continuously, never in steps: it is 30% over base to start,
@@ -465,10 +465,10 @@ window.buildPhotoDrum = function (containerId, images, direction) {
       ev.stopPropagation();
       if (c._held) { return; }
       c._held = true; anim.pause();
-      if (!c._counted) { c._counted = true; caught++; paintBar(); }
+      if (!c._counted) { c._counted = true; caught++; paintBar(); if (c._im && c._im.src) { caughtSrcs.push(c._im.src); } }
       pdrumCloseHooks.push(function () {
         c._held = false; anim.play(); arm();
-        if (caught >= nextShareAt && window.pdShare) { window.pdShare.show('tiles', caught); nextShareAt = caught + 5; }
+        if (caught >= nextShareAt && window.pdShare) { window.pdShare.show('tiles', caught, caughtSrcs.slice()); nextShareAt = caught + 5; }
       });
       openPdrumZoom(c._im, drum, c);
     });
@@ -587,25 +587,49 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   if (snd) { snd.onChange(paintSoundBtn); }
 
 
-  /* ---- two playful speed nudges at the tower's edges: +15% or -15% for ten seconds, eased in and out ---- */
+  /* ---- two comic-book speed buttons at the tower's edges: +15% or -15% for ten seconds, eased in and out,
+     with a pop-up word, a funny noise and (on phones) a little buzz so the press always feels like something ---- */
   var nudgeCur = 1, nudgeTarget = 1, nudgeEnd = 0, NUDGE_MS = 10000;
+  var POW_FAST = ['ZOOM!', 'VROOM!', 'WHEEE!', 'FASTER!', 'ZIP!'], POW_SLOW = ['WHOA…', 'EASY!', 'WOAH.', 'HOLD ON…', 'PHEW!'];
+  function nudgeSound(fast) {
+    if (!snd) { return; }
+    if (fast) {   /* a cartoon rocket: rising whoop, then a quick bright run of blips */
+      snd.tone(160, 0.38, 'sawtooth', 0.05, 0, 1100);
+      snd.tone(320, 0.3, 'square', 0.03, 0.02, 1500);
+      [523, 659, 784, 1047, 1319].forEach(function (f, i) { snd.tone(f, 0.07, 'square', 0.045, 0.3 + i * 0.05); });
+    } else {      /* slide-whistle down, a sad trombone wobble, and a soft bonk */
+      snd.tone(1000, 0.5, 'sine', 0.11, 0, 180);
+      [311, 294, 277].forEach(function (f, i) { snd.tone(f, 0.22, 'triangle', 0.09, 0.45 + i * 0.22); });
+      snd.tone(233, 0.7, 'triangle', 0.09, 1.1, 190);
+      snd.tone(110, 0.12, 'sine', 0.14, 0.02, 55);
+    }
+  }
+  function nudgePow(b, fast) {
+    var p = document.createElement('span'), list = fast ? POW_FAST : POW_SLOW;
+    p.className = 'pd-pow ' + (fast ? 'pd-pow--fast' : 'pd-pow--slow'); p.setAttribute('aria-hidden', 'true');
+    p.textContent = list[Math.floor(Math.random() * list.length)];
+    b.appendChild(p); setTimeout(function () { if (p.parentNode) { p.parentNode.removeChild(p); } }, 1000);
+    b.classList.remove('pd-squish'); void b.offsetWidth; b.classList.add('pd-squish');
+  }
   function mkNudge(cls, label, factor) {
     var b = document.createElement('button'); b.type = 'button'; b.className = 'pd-nudge ' + cls;
     b.innerHTML = '<span class="pd-nudge-t">' + label + '</span><span class="pd-nudge-s"></span>';
     b.addEventListener('click', function () {
       if (snd) { snd.unlock(); }
       nudgeTarget = factor; nudgeEnd = performance.now() + NUDGE_MS; paintNudges();
+      nudgeSound(factor > 1); nudgePow(b, factor > 1);
+      try { if (navigator.vibrate) { navigator.vibrate(factor > 1 ? [25, 30, 25] : [70]); } } catch (er) {}
     });
     container.appendChild(b); b._f = factor; return b;
   }
-  var nudgeFast = mkNudge('pd-nudge--fast', 'Faster, faster, don\u2019t stop!', 1.15);
+  var nudgeFast = mkNudge('pd-nudge--fast', 'Faster, faster, don’t stop!', 1.15);
   var nudgeSlow = mkNudge('pd-nudge--slow', 'Woah, easy there cowboy.', 0.85);
   function paintNudges() {
     var left = Math.max(0, Math.ceil((nudgeEnd - performance.now()) / 1000)), on = left > 0 && nudgeTarget !== 1;
     [nudgeFast, nudgeSlow].forEach(function (b) {
       var active = on && b._f === nudgeTarget;
       b.classList.toggle('is-on', active);
-      b.lastChild.textContent = active ? (b._f > 1 ? '+15%' : '\u221215%') + ' \u00b7 ' + left + 's' : '';
+      b.querySelector('.pd-nudge-s').textContent = active ? (b._f > 1 ? '+15%' : '\u221215%') + ' \u00b7 ' + left + 's' : '';
     });
   }
   setInterval(paintNudges, 500);
@@ -1062,40 +1086,154 @@ window.tpSound = (function () {
    it works with no accounts and no tracking. ---- */
 window.pdShare = (function () {
   var SITE = 'https://marcus-henri.github.io/twentieth-parallel/';
-  var panel = null, timer = null;
+  var panel = null, timer = null, blobUrl = null;
+  var FONT = 'Impact, "Arial Black", "Helvetica Neue", sans-serif';
   function mk(tag, cls, text) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (text) { e.textContent = text; } return e; }
   function hide() { if (panel) { panel.hidden = true; } clearTimeout(timer); }
-  function show(kind, n) {
-    var head, text, ref = kind;
-    if (kind === 'tiles') { head = 'You caught ' + n + ' flying tiles!'; text = 'I caught ' + n + ' of the 20th Parallel\u2019s flying tiles. Think you can do better?'; }
-    else if (kind === 'tetris') { head = 'A new personal best: ' + n; text = 'I scored ' + n + ' at Tetris on the 20th Parallel. Can you beat it?'; }
-    else { head = 'You beat the house!'; text = 'I beat the house at Pong on the 20th Parallel, 11\u2013' + n + '. Can you?'; }
-    var link = SITE + '?ref=' + ref, full = text + ' ' + link, e = encodeURIComponent;
+
+  /* a one-off comic-book "trophy card" painted on a canvas: Ben-Day dots, a starburst, the score and,
+     for caught tiles, the very pictures that were caught. Nothing leaves the browser. */
+  function burst(c, cx, cy, r1, r2, spikes, rot) {
+    c.beginPath();
+    for (var i = 0; i < spikes * 2; i++) {
+      var a = rot + Math.PI * i / spikes, r = i % 2 ? r1 : r2;
+      c[i ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    }
+    c.closePath();
+  }
+  function dots(c, x, y, w, h, step, rad, col) {
+    c.fillStyle = col;
+    for (var yy = 0, row = 0; yy < h + step; yy += step * 0.866, row++) {
+      for (var xx = (row % 2 ? step / 2 : 0); xx < w + step; xx += step) {
+        c.beginPath(); c.arc(x + xx, y + yy, rad, 0, 6.2832); c.fill();
+      }
+    }
+  }
+  function shout(c, txt, x, y, size, fill, rot) {
+    c.save(); c.translate(x, y); c.rotate(rot || 0); c.font = '900 ' + size + 'px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.lineJoin = 'round'; c.lineWidth = size * 0.16; c.strokeStyle = '#111'; c.strokeText(txt, size * 0.05, size * 0.05);
+    c.lineWidth = size * 0.12; c.strokeText(txt, 0, 0); c.fillStyle = fill; c.fillText(txt, 0, 0); c.restore();
+  }
+  function paint(kind, n, srcs, done) {
+    var cv = document.createElement('canvas'); cv.width = 1200; cv.height = 630;
+    var c = cv.getContext('2d'); if (!c) { done(null); return; }
+    var cfg = kind === 'tiles' ? { a: 'I CAUGHT', big: String(n), b: n === 1 ? 'FLYING TILE!' : 'FLYING TILES!' }
+            : kind === 'tetris' ? { a: 'I SCORED', big: String(n), b: 'AT TETRIS!' }
+            : { a: 'I BEAT THE HOUSE', big: '11–' + n, b: 'AT PONG!' };
+    c.fillStyle = '#ffd92e'; c.fillRect(0, 0, 1200, 630);
+    dots(c, 0, 0, 1200, 630, 26, 7.5, '#f0452c');
+    /* photos (only the tile card): tilted, white-bordered, outlined like comic panels */
+    var imgs = [], pending = 0;
+    function drawRest() {
+      var i;
+      if (imgs.length) {
+        var spots = [[860, 150, 8], [1000, 300, -7], [820, 360, -4], [1010, 500, 6], [700, 215, 5]];
+        for (i = 0; i < imgs.length && i < 5; i++) {
+          var im = imgs[i], w = 230, h = 230 * (im.naturalHeight / im.naturalWidth || 0.75), sp = spots[i];
+          if (h > 300) { h = 300; w = 300 * (im.naturalWidth / im.naturalHeight); }
+          c.save(); c.translate(sp[0], sp[1]); c.rotate(sp[2] * Math.PI / 180);
+          c.fillStyle = 'rgba(0,0,0,.5)'; c.fillRect(-w / 2 + 9, -h / 2 + 9, w + 20, h + 20);
+          c.fillStyle = '#fff'; c.fillRect(-w / 2 - 10, -h / 2 - 10, w + 20, h + 20);
+          c.lineWidth = 5; c.strokeStyle = '#111'; c.strokeRect(-w / 2 - 10, -h / 2 - 10, w + 20, h + 20);
+          c.drawImage(im, -w / 2, -h / 2, w, h); c.restore();
+        }
+      } else if (kind === 'tetris') {
+        var cols = ['#e8312f', '#1f5fbf', '#ffd92e', '#fff'], pcs = [[0, 0], [1, 0], [2, 0], [1, 1]];
+        c.save(); c.translate(860, 190); c.rotate(-0.2);
+        pcs.forEach(function (p, k) { c.fillStyle = cols[k % 3]; c.fillRect(p[0] * 90, p[1] * 90, 86, 86); c.lineWidth = 6; c.strokeStyle = '#111'; c.strokeRect(p[0] * 90, p[1] * 90, 86, 86); });
+        c.restore();
+        c.save(); c.translate(920, 410); c.rotate(0.15); [[0, 0], [0, 1], [1, 1], [0, 2]].forEach(function (p, k) { c.fillStyle = ['#1f5fbf', '#e8312f', '#fff'][k % 3]; c.fillRect(p[0] * 80, p[1] * 80, 76, 76); c.lineWidth = 6; c.strokeStyle = '#111'; c.strokeRect(p[0] * 80, p[1] * 80, 76, 76); }); c.restore();
+      } else {
+        c.fillStyle = '#fff'; c.lineWidth = 6; c.strokeStyle = '#111';
+        c.fillRect(780, 150, 28, 170); c.strokeRect(780, 150, 28, 170); c.fillRect(1090, 250, 28, 170); c.strokeRect(1090, 250, 28, 170);
+        c.beginPath(); c.arc(940, 330, 30, 0, 6.2832); c.fillStyle = '#e8312f'; c.fill(); c.stroke();
+      }
+      /* the starburst */
+      c.save(); burst(c, 330, 285, 215, 270, 14, 0.1); c.translate(14, 14); c.fillStyle = 'rgba(0,0,0,.45)'; c.fill(); c.restore();
+      burst(c, 330, 285, 215, 270, 14, 0.1); c.fillStyle = '#fff'; c.fill(); c.lineWidth = 9; c.strokeStyle = '#111'; c.lineJoin = 'round'; c.stroke();
+      c.save(); burst(c, 330, 285, 215, 270, 14, 0.1); c.clip(); dots(c, 60, 15, 560, 560, 20, 5.5, '#4a8fe0'); c.restore();
+      burst(c, 330, 285, 215, 270, 14, 0.1); c.lineWidth = 9; c.stroke();
+      shout(c, cfg.a, 330, 165, kind === 'pong' ? 50 : 72, '#e8312f', -0.05);
+      shout(c, cfg.big, 330, 290, String(cfg.big).length > 3 ? 120 : 175, '#ffd92e', -0.05);
+      shout(c, cfg.b, 330, 410, 58, '#1f5fbf', -0.05);
+      /* speech bubble */
+      c.save(); c.translate(0, 0);
+      c.beginPath(); c.moveTo(560, 470); c.lineTo(520, 440); c.lineTo(560, 450);
+      var bx = 520, by = 480, bw = 540, bh = 84, rr = 26;
+      c.fillStyle = '#fff'; c.lineWidth = 6; c.strokeStyle = '#111';
+      c.beginPath(); c.moveTo(bx + rr, by); c.lineTo(bx + bw - rr, by); c.quadraticCurveTo(bx + bw, by, bx + bw, by + rr); c.lineTo(bx + bw, by + bh - rr); c.quadraticCurveTo(bx + bw, by + bh, bx + bw - rr, by + bh);
+      c.lineTo(bx + 120, by + bh); c.lineTo(bx + 70, by + bh + 32); c.lineTo(bx + 80, by + bh); c.lineTo(bx + rr, by + bh); c.quadraticCurveTo(bx, by + bh, bx, by + bh - rr); c.lineTo(bx, by + rr); c.quadraticCurveTo(bx, by, bx + rr, by); c.closePath();
+      c.fill(); c.stroke(); c.restore();
+      c.font = '900 46px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#111'; c.fillText('CAN YOU BEAT THAT?', 790, 524);
+      /* footer strip */
+      c.fillStyle = '#111'; c.fillRect(0, 580, 1200, 50);
+      c.font = '700 24px "Courier New", monospace'; c.fillStyle = '#ffd92e'; c.textAlign = 'center';
+      c.fillText('THE 20TH PARALLEL  ·  marcus-henri.github.io/twentieth-parallel', 600, 606);
+      c.lineWidth = 10; c.strokeStyle = '#111'; c.strokeRect(5, 5, 1190, 620);
+      done(cv);
+    }
+    (srcs || []).slice(-5).forEach(function (s) {
+      pending++;
+      var im = new Image(); im.onload = function () { imgs.push(im); if (!--pending) { drawRest(); } };
+      im.onerror = function () { if (!--pending) { drawRest(); } };
+      try { im.src = new URL(s, document.baseURI).href; } catch (e) { pending--; }
+    });
+    if (!pending) { drawRest(); }
+  }
+
+  function show(kind, n, srcs) {
+    var head, text, ref = kind, sub;
+    if (kind === 'tiles') { head = 'POW! ' + n + ' tiles caught!'; sub = 'Nobody catches the 20th Parallel’s tiles like you do.'; text = 'I caught ' + n + ' of the 20th Parallel’s flying tiles. Think you can do better?'; }
+    else if (kind === 'tetris') { head = 'KA-BLAM! New best: ' + n; sub = 'Show the group chat who’s boss.'; text = 'I scored ' + n + ' at Tetris on the 20th Parallel. Can you beat it?'; }
+    else { head = 'WHAAM! You beat the house!'; sub = 'Eleven points to ' + n + '. Gloat responsibly.'; text = 'I beat the house at Pong on the 20th Parallel, 11–' + n + '. Can you?'; }
+    var link = SITE + '?ref=' + ref, full = text + ' ' + link, e = encodeURIComponent, blob = null;
     if (!panel) {
-      panel = mk('div', 'pd-share'); panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Share');
+      panel = mk('div', 'pd-share'); panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Share your score');
       document.body.appendChild(panel);
     }
     panel.innerHTML = '';
-    var x = mk('button', 'pd-share-x', '\u00d7'); x.type = 'button'; x.setAttribute('aria-label', 'Close'); x.addEventListener('click', hide);
-    panel.appendChild(x);
+    var x = mk('button', 'pd-share-x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Close'); x.addEventListener('click', hide);
+    var holder = mk('div', 'pd-share-card');
+    panel.appendChild(holder); panel.appendChild(x);
     panel.appendChild(mk('p', 'pd-share-head', head));
-    panel.appendChild(mk('p', 'pd-share-text', 'Show your friends? Link included.'));
+    panel.appendChild(mk('p', 'pd-share-text', sub));
     var row = mk('div', 'pd-share-row');
-    function btn(label, fn) { var b = mk('button', '', label); b.type = 'button'; b.addEventListener('click', fn); row.appendChild(b); return b; }
+    function btn(label, fn, cls) { var b = mk('button', cls || '', label); b.type = 'button'; b.addEventListener('click', fn); row.appendChild(b); return b; }
     function go(href) { return function () { window.open(href, '_blank', 'noopener'); }; }
-    if (navigator.share) { btn('Share\u2026', function () { try { navigator.share({ title: 'The 20th Parallel', text: text, url: link }); } catch (er) {} }); }
+    var file = null;
+    function fileOf() { return blob ? new File([blob], 'twentieth-parallel-' + kind + '.png', { type: 'image/png' }) : null; }
+    var shareBtn = btn('Share the card', function () {
+      var f = fileOf();
+      if (f && navigator.canShare && navigator.canShare({ files: [f] })) { navigator.share({ files: [f], title: 'The 20th Parallel', text: full }).catch(function () {}); }
+      else if (navigator.share) { navigator.share({ title: 'The 20th Parallel', text: text, url: link }).catch(function () {}); }
+      else { cp.click(); }
+    }, 'pd-share-main');
+    var save = btn('Save image', function () {
+      if (!blob) { return; }
+      if (blobUrl) { URL.revokeObjectURL(blobUrl); }
+      blobUrl = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = blobUrl; a.download = 'twentieth-parallel-' + kind + '.png'; document.body.appendChild(a); a.click(); a.remove();
+    });
+    save.hidden = true;
     btn('X', go('https://twitter.com/intent/tweet?text=' + e(text) + '&url=' + e(link)));
     btn('WhatsApp', go('https://wa.me/?text=' + e(full)));
     btn('Facebook', go('https://www.facebook.com/sharer/sharer.php?u=' + e(link) + '&quote=' + e(text)));
     btn('LinkedIn', go('https://www.linkedin.com/sharing/share-offsite/?url=' + e(link)));
-    var cp = btn('Copy', function () {
-      var done = function () { cp.textContent = 'Copied!'; setTimeout(function () { cp.textContent = 'Copy'; }, 1800); };
+    var cp = btn('Copy text', function () {
+      var done = function () { cp.textContent = 'Copied!'; setTimeout(function () { cp.textContent = 'Copy text'; }, 1800); };
       if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(full).then(done, function () { window.prompt('Copy this:', full); }); }
       else { window.prompt('Copy this:', full); }
     });
     panel.appendChild(row);
-    panel.hidden = false;
-    clearTimeout(timer); timer = setTimeout(hide, 30000);
+    panel.hidden = false; panel.classList.remove('pd-pop'); void panel.offsetWidth; panel.classList.add('pd-pop');
+    try { if (window.tpSound) { window.tpSound.tone(392, 0.09, 'square', 0.06); window.tpSound.tone(523, 0.09, 'square', 0.06, 0.09); window.tpSound.tone(784, 0.2, 'square', 0.07, 0.18); } } catch (er) {}
+    paint(kind, n, srcs, function (cv) {
+      if (!cv) { return; }
+      cv.className = 'pd-share-canvas'; cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', text);
+      holder.appendChild(cv);
+      try { cv.toBlob(function (b) { blob = b; if (b) { save.hidden = false; } }, 'image/png'); } catch (er) {}
+    });
+    clearTimeout(timer); timer = setTimeout(hide, 60000);
   }
   return { show: show, hide: hide };
 })();
