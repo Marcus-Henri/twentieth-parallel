@@ -163,13 +163,46 @@
 var pdrumZoomOpen = false;
 var pdrumLastFocus = null;
 
-function openPdrumZoom(im, drum) {
+/* a stand-alone copy of a styled tile, for the zoom view and for the fly-away.
+   The few values a tile only gets from its position in its column are carried
+   across by hand so the copy looks the same outside it. */
+function pdCloneTile(tile) {
+  var c = tile.cloneNode(true);
+  var cs = window.getComputedStyle(tile);
+  c.style.setProperty('--bq-ground', cs.getPropertyValue('--bq-ground'));
+  c.style.setProperty('--bq-hue', cs.getPropertyValue('--bq-hue'));
+  c.removeAttribute('tabindex'); c.removeAttribute('role');
+  c.style.flex = ''; c.style.transform = 'none'; c.style.visibility = 'visible';
+  c.classList.remove('pd-flown');
+  return c;
+}
+function openPdrumZoom(im, drum, tile) {
   var overlay = document.getElementById('pdrumZoom');
   if (!overlay) { return; }
   var img = document.getElementById('pdrumZoomImg');
   var cap = document.getElementById('pdrumZoomCap');
+  var card = overlay.querySelector('.pdrum-zoom-card');
   pdrumLastFocus = document.activeElement;
+  var oldStage = overlay.querySelector('.pdrum-zoom-styled');
+  if (oldStage) { oldStage.parentNode.removeChild(oldStage); }
   img.src = im.src; img.alt = im.title; cap.textContent = im.title;
+  img.style.display = '';
+  /* if the picture has been given an art treatment, show it as it looks in the
+     tower, enlarged, rather than the untouched original */
+  if (tile && /pd-style-/.test(tile.className) && tile.offsetWidth > 0 && card) {
+    var w = tile.offsetWidth, h = tile.offsetHeight;
+    var stage = document.createElement('div');
+    stage.className = 'pdrum-zoom-styled';
+    stage.style.aspectRatio = w + ' / ' + h;
+    stage.style.width = 'min(100%, ' + (74 * w / h).toFixed(1) + 'vh)';
+    var copy = pdCloneTile(tile);
+    copy.style.width = '100%'; copy.style.height = '100%';
+    stage.appendChild(copy);
+    card.insertBefore(stage, img);
+    img.style.display = 'none';
+    var tg = tile.querySelector('.pd-style-tag');
+    if (tg) { cap.textContent = im.title + tg.textContent; }
+  }
   overlay.hidden = false;
   pdrumZoomOpen = true;
   requestAnimationFrame(function () { overlay.classList.add('show'); });
@@ -183,10 +216,11 @@ function closePdrumZoom() {
   setTimeout(function () {
     overlay.hidden = true;
     document.getElementById('pdrumZoomImg').removeAttribute('src');
+    var st = overlay.querySelector('.pdrum-zoom-styled');
+    if (st) { st.parentNode.removeChild(st); }
   }, 220);
   if (pdrumLastFocus && pdrumLastFocus.focus) { pdrumLastFocus.focus(); }
-}
-(function () {
+}(function () {
   var overlay = document.getElementById('pdrumZoom');
   if (!overlay) { return; }
   var closeBtn = document.getElementById('pdrumZoomClose');
@@ -312,9 +346,9 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     fig.appendChild(img); fig.appendChild(ov); fig.appendChild(cap);
     fig.setAttribute('tabindex', '0');
     fig.setAttribute('role', 'button');
-    fig.addEventListener('click', function () { openPdrumZoom(im, drum); });
+    fig.addEventListener('click', function () { openPdrumZoom(im, drum, fig); });
     fig.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPdrumZoom(im, drum); }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPdrumZoom(im, drum, fig); }
     });
     return fig;
   }
@@ -381,15 +415,78 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     }
   }
 
+  /* ---- speed-up and storm: the drum starts 15% faster than the reference, and
+     every full turn it makes it is a further 5% faster. Once it passes
+     FLY_AT times the base speed the pictures begin to tear loose, one at a
+     time, and are carried off in the direction of the wind. When the last
+     one has gone the drum rests a moment, then fills again and starts over. ---- */
+  var BOOST = 1.15, STEP = 1.05, FLY_AT = 2.0, MAX_MUL = 3.2;
+  var stormOn = false, nextFling = 0, flingGap = 1600, resetAt = 0;
+  function speedMul() { return BOOST * Math.pow(STEP, Math.floor(Math.abs(rotation) / 360)); }
+  function flyAway(tile) {
+    var r = tile.getBoundingClientRect();
+    if (r.width < 6 || r.height < 6 || !tile.animate) { return false; }
+    var c = pdCloneTile(tile);
+    c.classList.add('pd-flyer');
+    c.style.position = 'fixed'; c.style.left = r.left + 'px'; c.style.top = r.top + 'px';
+    c.style.width = r.width + 'px'; c.style.height = r.height + 'px';
+    c.style.margin = '0'; c.style.zIndex = '60'; c.style.pointerEvents = 'none';
+    document.body.appendChild(c);
+    tile.classList.add('pd-flown'); tile.style.visibility = 'hidden';
+    var dir = direction < 0 ? -1 : 1, W = window.innerWidth, H = window.innerHeight;
+    var sx = dir * (W * 0.35 + Math.random() * W * 0.45);
+    var up = -(H * 0.3 + Math.random() * H * 0.55);
+    var spin = dir * (360 + Math.random() * 900);
+    var wob = 30 + Math.random() * 60;
+    c.animate([
+      { transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1 },
+      { transform: 'translate(' + (sx * 0.2) + 'px,' + (-wob) + 'px) rotate(' + (spin * 0.2) + 'deg) scale(1.1)', opacity: 1, offset: 0.2 },
+      { transform: 'translate(' + (sx * 0.55) + 'px,' + (up * 0.35 + wob) + 'px) rotate(' + (spin * 0.55) + 'deg) scale(0.85)', opacity: 1, offset: 0.55 },
+      { transform: 'translate(' + sx + 'px,' + up + 'px) rotate(' + spin + 'deg) scale(0.2)', opacity: 0 }
+    ], { duration: 1700 + Math.random() * 1100, easing: 'cubic-bezier(.45,0,.85,.55)', fill: 'forwards' })
+      .onfinish = function () { if (c.parentNode) { c.parentNode.removeChild(c); } };
+    return true;
+  }
+  function flingOne() {
+    var pool = [];
+    for (var i = 0; i < cols.length; i++) {
+      var eff = normalize(cols[i]._faceAngle + rotation);
+      if (eff < 70 || eff > 290) {
+        var ts = cols[i].querySelectorAll('.pdrum-tile:not(.pd-flown)');
+        for (var k = 0; k < ts.length; k++) { pool.push(ts[k]); }
+      }
+    }
+    if (!pool.length) { return false; }
+    return flyAway(pool[Math.floor(Math.random() * pool.length)]);
+  }
+  function calmAfterStorm() {
+    stormOn = false; resetAt = 0; flingGap = 1600;
+    rotation = rotation % 360; revolved = false;
+    images.forEach(function (im) { im._pdStep = null; });
+    for (var i = 0; i < cols.length; i++) { fillFace(cols[i]); }
+    drum.classList.remove('pd-regen'); void drum.offsetWidth; drum.classList.add('pd-regen');
+  }
+  function runStorm(t) {
+    if (!stormOn && !resetAt && Math.min(speedMul(), MAX_MUL) >= FLY_AT) { stormOn = true; nextFling = t + 1200; }
+    if (stormOn && !resetAt && t >= nextFling) {
+      var ok = flingOne();
+      nextFling = t + (ok ? flingGap : 120);
+      if (ok) { flingGap = Math.max(260, flingGap * 0.93); }
+      if (!drum.querySelector('.pdrum-tile:not(.pd-flown)')) { resetAt = t + 5000; }
+    }
+    if (resetAt && t >= resetAt) { calmAfterStorm(); }
+  }
+
   function tick(t) {
     if (lastT === null) { lastT = t; }
-    var dt = t - lastT;
+    var dt = Math.min(t - lastT, 100);
     lastT = t;
     if (!paused && !pdrumZoomOpen) {
-      rotation += degPerMs * dt;
+      rotation += degPerMs * Math.min(speedMul(), MAX_MUL) * dt;
       if (!revolved && Math.abs(rotation) >= 360) { revolved = true; }
       drum.style.transform = 'rotateY(' + rotation + 'deg)';
-      maybeRefillHiddenFace(t);
+      if (!stormOn) { maybeRefillHiddenFace(t); }
+      runStorm(t);
     }
     requestAnimationFrame(tick);
   }
