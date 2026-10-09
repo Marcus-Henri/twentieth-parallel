@@ -385,6 +385,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
 
   var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var paused = false;
+  var userPaused = false; /* the visible Pause storm / Resume control */
 
   drum.addEventListener('pointerover', function (e) {
     if (!e.target.closest('.pdrum-tile')) { return; }
@@ -560,7 +561,21 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   barClock = document.createElement('span'); barClock.className = 'pd-clock';
   barStorm = document.createElement('button'); barStorm.type = 'button'; barStorm.className = 'arcade-tool pd-storm'; barStorm.textContent = 'Make it storm';
   var barSound = document.createElement('button'); barSound.type = 'button'; barSound.className = 'arcade-tool';
-  bar.appendChild(barClock); bar.appendChild(barStorm); bar.appendChild(barSound);
+  var barPause = document.createElement('button'); barPause.type = 'button'; barPause.className = 'arcade-tool pd-pausebtn';
+  barPause.setAttribute('aria-pressed', 'false'); barPause.textContent = 'Pause motion';
+  barPause.setAttribute('aria-label', 'Pause the spinning tower and storm');
+  barPause.addEventListener('click', function () {
+    userPaused = !userPaused;
+    barPause.textContent = userPaused ? 'Resume motion' : 'Pause motion';
+    barPause.setAttribute('aria-pressed', userPaused ? 'true' : 'false');
+    try {
+      document.getAnimations().forEach(function (a) {
+        var tg = a.effect && a.effect.target;
+        if (tg && tg.classList && tg.classList.contains('pd-flyer') && !tg._held) { if (userPaused) { a.pause(); } else { a.play(); } }
+      });
+    } catch (e) {}
+  });
+  bar.appendChild(barClock); bar.appendChild(barStorm); bar.appendChild(barPause); bar.appendChild(barSound);
   container.appendChild(bar);
   function stormTurns() { return FLY_AT > BOOST ? Math.log(FLY_AT / BOOST) / Math.log(STEP) : 0; }
   function secsToStorm() {
@@ -665,7 +680,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     wind.last = t;
     if (!wind.gain) { windInit(); if (!wind.gain) { return; } }
     var level = 0;
-    if (snd.isOn() && wind.inView && !document.hidden && !assembling && !resetAt) {
+    if (snd.isOn() && wind.inView && !document.hidden && !assembling && !resetAt && !userPaused) {
       var prog = Math.max(0, Math.min(1, (Math.min(speedMul(), MAX_MUL) - BOOST) / (FLY_AT - BOOST)));
       level = stormOn ? 1 : 0.1 + 0.8 * prog * prog;
     }
@@ -712,7 +727,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
   function tick(t) {    if (lastT === null) { lastT = t; }
     var dt = Math.min(t - lastT, 100);
     lastT = t;
-    if (!paused && !pdrumZoomOpen && !assembling) {
+    if (!paused && !userPaused && !pdrumZoomOpen && !assembling) {
       if (nudgeTarget !== 1 && t > nudgeEnd) { nudgeTarget = 1; }
       nudgeCur += (nudgeTarget - nudgeCur) * Math.min(1, dt / 350);
       var step = degPerMs * Math.min(speedMul(), MAX_MUL) * nudgeCur * dt;
@@ -723,7 +738,8 @@ window.buildPhotoDrum = function (containerId, images, direction) {
       if (!stormOn) { maybeRefillHiddenFace(t); }
       runStorm(t);
     }
-    windTick(t); stormFx(t);
+    if (userPaused) { lastT = t; }
+    windTick(t); if (!userPaused) { stormFx(t); }
     requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
@@ -1887,11 +1903,15 @@ window.pdShare = (function () {
     else if (mode === 'over') banner(cs, ground, ['GAME OVER', 'click to retry']);
   }
 
+  var tetInView = true;
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) { tetInView = es[0].isIntersecting; if (!tetInView) { last = 0; } }).observe(cv);
+  }
   function frame (now) {
     requestAnimationFrame(frame);
     var dt = last ? Math.min(100, now - last) : 16;
     last = now;
-    if (mode !== 'playing' || panel.hidden) return;
+    if (mode !== 'playing' || panel.hidden || !tetInView) return;
     acc += dt;
     var iv = interval();
     if (acc >= iv) {

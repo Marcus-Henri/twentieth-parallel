@@ -13,14 +13,14 @@ img { max-width: 100%; }
     --ground-tint: #E8EBE6;
     --ink:         #15181A;
     --ink-2:       #494F52;
-    --ink-3:       #757C7E;
+    --ink-3:       #60676A; /* was #757C7E: 3.4-3.7:1; now 4.6:1+ on all grounds */
     --rule:        #CDD1CA;
     --rule-soft:   #DCDFD8;
 
     /* section accents — one desaturated ink-family hue per section */
     --indigo:   #26456B;
     --celadon:  #2E6B63;
-    --brass:    #9A6E28;
+    --brass:    #86601F; /* was #9A6E28: 3.6:1 as text */
     --seal:     #B4372A;
     --plum:     #5E3A56;
     --moss:     #55683A;
@@ -44,7 +44,7 @@ img { max-width: 100%; }
       --ground-tint: #171C1E;
       --ink:         #E8E7E1;
       --ink-2:       #A9AEAF;
-      --ink-3:       #7B8284;
+      --ink-3:       #8A9193;
       --rule:        #2C3236;
       --rule-soft:   #222729;
 
@@ -70,7 +70,7 @@ img { max-width: 100%; }
     --ground-tint: #171C1E;
     --ink:         #E8E7E1;
     --ink-2:       #A9AEAF;
-    --ink-3:       #7B8284;
+    --ink-3:       #8A9193;
     --rule:        #2C3236;
     --rule-soft:   #222729;
 
@@ -1298,7 +1298,7 @@ img { max-width: 100%; }
   letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3);
   margin: 0 0 0.6rem;
 }
-.arcade-board h4 span{ text-transform: none; letter-spacing: 0; opacity: 0.7; }
+.arcade-board h4 span{ text-transform: none; letter-spacing: 0; }
 .arcade-list{ margin: 0; padding: 0; list-style: none; font-family: var(--mono); font-size: 0.75rem; }
 .arcade-list li{
   display: flex; justify-content: space-between; gap: 0.5rem;
@@ -1805,4 +1805,33 @@ a.vid + a.vid{ margin-top:1.75rem; }
   .post, .entry, article{ break-inside: avoid-page; }
   blockquote.marg{ break-inside: avoid-page; }
   a[href^="http"]::after{ content: " (" attr(href) ")"; font-size: 0.75em; color: #555; }
+}
+
+
+/* ============ accessibility pass ============ */
+/* keyboard focus: always visible, on the controls the base rule can miss */
+:focus-visible{ outline: 2px solid var(--focus); outline-offset: 3px; }
+.skip:focus-visible{ outline-color: var(--ground); outline-offset: -4px; }
+#main:focus{ outline: none; }
+.arcade-tool:focus-visible, .pd-bar button:focus-visible, #pongSave:focus-visible, #pongSkip:focus-visible,
+#pongInitials:focus-visible, .nav a:focus-visible{ outline: 2px solid var(--focus); outline-offset: 2px; }
+.arcade-panel :focus-visible, #pongCanvas:focus-visible, #tetCanvas:focus-visible{ outline-color: var(--focus); }
+.pd-bar .pd-pausebtn{ display: inline-block; }
+/* touch targets: at least 44px for every game control */
+.arcade-tool, #pongSave, #pongSkip, .pd-bar button{ min-height: 44px; min-width: 44px; }
+#pongInitials{ min-height: 44px; }
+@media (hover: none), (pointer: coarse), (max-width: 640px){
+  .arcade-tools{ flex-wrap: wrap; }
+  .arcade-tool{ padding-top: 0.6rem; padding-bottom: 0.6rem; }
+}
+/* nothing may push the page sideways at 375px */
+html, body{ max-width: 100%; overflow-x: clip; }
+img, canvas, svg, video, iframe{ max-width: 100%; }
+@media (max-width: 640px){
+  .arcade-panel, .arcade-stage, .arcade-table, .arcade-board{ min-width: 0; max-width: 100%; }
+  .pd-bar{ max-width: 100%; }
+}
+@media (prefers-reduced-motion: reduce){
+  html{ scroll-behavior: auto; }
+  .pd-pass-wiggle, .pd-nudge.is-on, .pd-squish, .pd-pow, .pd-bolt{ animation: none !important; }
 }
