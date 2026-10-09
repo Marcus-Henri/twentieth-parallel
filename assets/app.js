@@ -281,9 +281,17 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     im._pdStep = (im._pdStep == null) ? im._pdOffset : im._pdStep + 1;
     return PD_STYLES[1 + (im._pdStep % (PD_STYLES.length - 1))];
   }
+  var pvLast = {};
+  /* each treatment has six looks; pick one at random, never the same twice running */
+  function variantFor(key) {
+    var v, n = 0;
+    do { v = Math.floor(Math.random() * 6); } while (v === pvLast[key] && n++ < 8);
+    pvLast[key] = v; return v;
+  }
   function makeTile(im, styleDef) {
     var fig = document.createElement('figure');
     fig.className = 'pdrum-tile' + (styleDef.className ? ' ' + styleDef.className : '');
+    if (styleDef.className) { fig.className += ' pv-' + variantFor(styleDef.key); }
     try { fig.style.setProperty('--pd-src', 'url("' + new URL(im.src, document.baseURI).href + '")'); } catch (e) {}
     var img = document.createElement('img');
     img.src = im.src; img.alt = im.title; img.loading = 'lazy';

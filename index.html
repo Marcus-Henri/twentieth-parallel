@@ -1001,7 +1001,24 @@
         <feFuncB type="discrete" tableValues="0.05 0.18 0.31 0.44 0.57 0.7 0.83 0.96"></feFuncB>
       </feComponentTransfer>
     </filter>
-    <filter id="pdFilterBasquiat" x="-2%" y="-2%" width="104%" height="104%" color-interpolation-filters="sRGB">
+    <filter id="pdFilterVanGogh2" x="-3%" y="-3%" width="106%" height="106%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018 0.038" numOctaves="2" seed="5" result="swirl"></feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="swirl" scale="28" xChannelSelector="R" yChannelSelector="G" result="painted"></feDisplacementMap>
+      <feComponentTransfer in="painted">
+        <feFuncR type="discrete" tableValues="0.04 0.2 0.38 0.56 0.74 0.94"></feFuncR>
+        <feFuncG type="discrete" tableValues="0.04 0.2 0.38 0.56 0.74 0.94"></feFuncG>
+        <feFuncB type="discrete" tableValues="0.04 0.2 0.38 0.56 0.74 0.94"></feFuncB>
+      </feComponentTransfer>
+    </filter>
+    <filter id="pdFilterVanGogh3" x="-3%" y="-3%" width="106%" height="106%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.07 0.1" numOctaves="1" seed="3" result="swirl"></feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="swirl" scale="9" xChannelSelector="R" yChannelSelector="G" result="painted"></feDisplacementMap>
+      <feComponentTransfer in="painted">
+        <feFuncR type="discrete" tableValues="0.06 0.22 0.4 0.58 0.76 0.95"></feFuncR>
+        <feFuncG type="discrete" tableValues="0.06 0.22 0.4 0.58 0.76 0.95"></feFuncG>
+        <feFuncB type="discrete" tableValues="0.06 0.22 0.4 0.58 0.76 0.95"></feFuncB>
+      </feComponentTransfer>
+    </filter>    <filter id="pdFilterBasquiat" x="-2%" y="-2%" width="104%" height="104%" color-interpolation-filters="sRGB">
       <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="1" seed="4" result="rough"></feTurbulence>
       <feDisplacementMap in="SourceGraphic" in2="rough" scale="4" xChannelSelector="R" yChannelSelector="G" result="scuffed"></feDisplacementMap>
       <feColorMatrix in="scuffed" type="saturate" values="3"></feColorMatrix>
