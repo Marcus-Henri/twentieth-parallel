@@ -1747,6 +1747,19 @@ a.vid + a.vid{ margin-top:1.75rem; }
 .pd-share-row button:active{ transform:translate(3px,3px); box-shadow:0 0 0 #111; }
 .pd-share-row .pd-share-main{ background:#e8312f; color:#fff; flex:1 1 100%; font-size:.95rem; text-shadow:1px 1px 0 #111; }
 .pd-share-row .pd-share-main:hover{ background:#c8201f; }
+.pd-share-row .pd-sh-x{ background:#111; color:#fff; }
+.pd-share-row .pd-sh-wa{ background:#25d366; }
+.pd-share-row .pd-sh-fb{ background:#1877f2; color:#fff; }
+.pd-share-row .pd-sh-li{ background:#0a66c2; color:#fff; }
+.pd-share-row .pd-sh-x:hover{ background:#333; }
+.pd-share-row .pd-sh-wa:hover{ background:#4be58a; }
+.pd-share-row .pd-sh-fb:hover{ background:#3b8cff; }
+.pd-share-row .pd-sh-li:hover{ background:#2a85d8; }
+.pd-share-row button:not(.pd-share-main):not(.pd-sh-x):not(.pd-sh-wa):not(.pd-sh-fb):not(.pd-sh-li){ background:#ffe21f; }
+.pd-share-row button:not(.pd-share-main):not(.pd-sh-x):not(.pd-sh-wa):not(.pd-sh-fb):not(.pd-sh-li):hover{ background:#ffd000; }
+.pd-share-row button{ font-size:.82rem; }
+.pd-share-row button:hover{ transform:rotate(-1.5deg) scale(1.04); }
+.pd-share-row button:active{ transform:translate(3px,3px); }
 /* ============ print ============ */
 @media print{
   :root{ color-scheme: light; }

@@ -677,7 +677,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
 
   /* lightning, Lichtenstein style: one flat comic flash (halftone dots, a black-outlined yellow bolt,
      a "KRAK-A-BOOM" burst), faded out in under a second, with a rolling thunder just behind it */
-  var nextBolt = 0, BOOMS = ['KRAK-A-BOOM!', 'WHAAM!', 'KA-RRAKK!', 'BRRRATOOM!', 'ZAP!'];
+  var nextBolt = 0, BOOMS = ['KRAK-A-BOOM!', 'WHAAM!', 'KA-RRAKK!', 'BRRRATOOM!', 'ZAP!', 'MARCUS HENRI!'];
   function thunder() {
     var c = snd && snd.isOn() && gestured && wind.inView && !document.hidden && snd.context ? snd.context() : null;
     if (!c) { return; }
@@ -1149,13 +1149,13 @@ window.pdShare = (function () {
         c.beginPath(); c.arc(940, 330, 30, 0, 6.2832); c.fillStyle = '#e8312f'; c.fill(); c.stroke();
       }
       /* the starburst */
-      c.save(); burst(c, 330, 285, 215, 270, 14, 0.1); c.translate(14, 14); c.fillStyle = 'rgba(0,0,0,.45)'; c.fill(); c.restore();
-      burst(c, 330, 285, 215, 270, 14, 0.1); c.fillStyle = '#fff'; c.fill(); c.lineWidth = 9; c.strokeStyle = '#111'; c.lineJoin = 'round'; c.stroke();
-      c.save(); burst(c, 330, 285, 215, 270, 14, 0.1); c.clip(); dots(c, 60, 15, 560, 560, 20, 5.5, '#4a8fe0'); c.restore();
-      burst(c, 330, 285, 215, 270, 14, 0.1); c.lineWidth = 9; c.stroke();
-      shout(c, cfg.a, 330, 165, kind === 'pong' ? 50 : 72, '#e8312f', -0.05);
-      shout(c, cfg.big, 330, 290, String(cfg.big).length > 3 ? 120 : 175, '#ffd92e', -0.05);
-      shout(c, cfg.b, 330, 410, 58, '#1f5fbf', -0.05);
+      c.save(); burst(c, 330, 310, 200, 250, 14, 0.1); c.translate(14, 14); c.fillStyle = 'rgba(0,0,0,.45)'; c.fill(); c.restore();
+      burst(c, 330, 310, 200, 250, 14, 0.1); c.fillStyle = '#fff'; c.fill(); c.lineWidth = 9; c.strokeStyle = '#111'; c.lineJoin = 'round'; c.stroke();
+      c.save(); burst(c, 330, 310, 200, 250, 14, 0.1); c.clip(); dots(c, 60, 15, 560, 560, 20, 5.5, '#4a8fe0'); c.restore();
+      burst(c, 330, 310, 200, 250, 14, 0.1); c.lineWidth = 9; c.stroke();
+      shout(c, cfg.a, 330, 192, kind === 'pong' ? 50 : 72, '#e8312f', -0.05);
+      shout(c, cfg.big, 330, 312, String(cfg.big).length > 3 ? 120 : 175, '#ffd92e', -0.05);
+      shout(c, cfg.b, 330, 425, 58, '#1f5fbf', -0.05);
       /* speech bubble */
       c.save(); c.translate(0, 0);
       c.beginPath(); c.moveTo(560, 470); c.lineTo(520, 440); c.lineTo(560, 450);
@@ -1165,10 +1165,14 @@ window.pdShare = (function () {
       c.lineTo(bx + 120, by + bh); c.lineTo(bx + 70, by + bh + 32); c.lineTo(bx + 80, by + bh); c.lineTo(bx + rr, by + bh); c.quadraticCurveTo(bx, by + bh, bx, by + bh - rr); c.lineTo(bx, by + rr); c.quadraticCurveTo(bx, by, bx + rr, by); c.closePath();
       c.fill(); c.stroke(); c.restore();
       c.font = '900 46px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#111'; c.fillText('CAN YOU BEAT THAT?', 790, 524);
+      /* brand caption box, top-left, like a comic's opening panel */
+      c.save(); c.translate(36, 30); c.rotate(-0.03); c.fillStyle = '#111'; c.fillRect(6, 6, 340, 62); c.fillStyle = '#fff'; c.fillRect(0, 0, 340, 62); c.lineWidth = 5; c.strokeStyle = '#111'; c.strokeRect(0, 0, 340, 62);
+      c.font = '900 30px ' + FONT; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillStyle = '#e8312f'; c.fillText('MARCUS HENRI', 16, 24);
+      c.font = '700 16px "Courier New", monospace'; c.fillStyle = '#111'; c.fillText('PRESENTS: THE 20TH PARALLEL', 16, 48); c.restore();
       /* footer strip */
       c.fillStyle = '#111'; c.fillRect(0, 580, 1200, 50);
       c.font = '700 24px "Courier New", monospace'; c.fillStyle = '#ffd92e'; c.textAlign = 'center';
-      c.fillText('THE 20TH PARALLEL  ·  marcus-henri.github.io/twentieth-parallel', 600, 606);
+      c.fillText('MARCUS HENRI  ·  THE 20TH PARALLEL  ·  marcus-henri.github.io/twentieth-parallel', 600, 606);
       c.lineWidth = 10; c.strokeStyle = '#111'; c.strokeRect(5, 5, 1190, 620);
       done(cv);
     }
@@ -1183,9 +1187,9 @@ window.pdShare = (function () {
 
   function show(kind, n, srcs) {
     var head, text, ref = kind, sub;
-    if (kind === 'tiles') { head = 'POW! ' + n + ' tiles caught!'; sub = 'Nobody catches the 20th Parallel’s tiles like you do.'; text = 'I caught ' + n + ' of the 20th Parallel’s flying tiles. Think you can do better?'; }
-    else if (kind === 'tetris') { head = 'KA-BLAM! New best: ' + n; sub = 'Show the group chat who’s boss.'; text = 'I scored ' + n + ' at Tetris on the 20th Parallel. Can you beat it?'; }
-    else { head = 'WHAAM! You beat the house!'; sub = 'Eleven points to ' + n + '. Gloat responsibly.'; text = 'I beat the house at Pong on the 20th Parallel, 11–' + n + '. Can you?'; }
+    if (kind === 'tiles') { head = 'POW! ' + n + ' runaway tiles caught!'; sub = 'Marcus Henri’s tiles have escaped before. Nobody caught them like you did. Brag a little.'; text = 'I just caught ' + n + ' of Marcus Henri’s runaway tiles at The 20th Parallel 🌪️ Bet you can’t beat that:'; }
+    else if (kind === 'tetris') { head = 'KA-BLAM! New best: ' + n; sub = 'Marcus Henri hid a Tetris in his website. You just owned it. Tell the group chat.'; text = 'I scored ' + n + ' at Tetris on Marcus Henri’s 20th Parallel 🧱 Your move:'; }
+    else { head = 'WHAAM! You beat the house!'; sub = 'Eleven points to ' + n + ', on a personal website. Gloat responsibly.'; text = 'I beat the house at Pong, 11–' + n + ', on Marcus Henri’s 20th Parallel 🏓 Can you?'; }
     var link = SITE + '?ref=' + ref, full = text + ' ' + link, e = encodeURIComponent, blob = null;
     if (!panel) {
       panel = mk('div', 'pd-share'); panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Share your score');
@@ -1202,25 +1206,25 @@ window.pdShare = (function () {
     function go(href) { return function () { window.open(href, '_blank', 'noopener'); }; }
     var file = null;
     function fileOf() { return blob ? new File([blob], 'twentieth-parallel-' + kind + '.png', { type: 'image/png' }) : null; }
-    var shareBtn = btn('Share the card', function () {
+    var shareBtn = btn('🚀 Share the card', function () {
       var f = fileOf();
       if (f && navigator.canShare && navigator.canShare({ files: [f] })) { navigator.share({ files: [f], title: 'The 20th Parallel', text: full }).catch(function () {}); }
       else if (navigator.share) { navigator.share({ title: 'The 20th Parallel', text: text, url: link }).catch(function () {}); }
       else { cp.click(); }
     }, 'pd-share-main');
-    var save = btn('Save image', function () {
+    var save = btn('💾 Save image', function () {
       if (!blob) { return; }
       if (blobUrl) { URL.revokeObjectURL(blobUrl); }
       blobUrl = URL.createObjectURL(blob);
       var a = document.createElement('a'); a.href = blobUrl; a.download = 'twentieth-parallel-' + kind + '.png'; document.body.appendChild(a); a.click(); a.remove();
     });
     save.hidden = true;
-    btn('X', go('https://twitter.com/intent/tweet?text=' + e(text) + '&url=' + e(link)));
-    btn('WhatsApp', go('https://wa.me/?text=' + e(full)));
-    btn('Facebook', go('https://www.facebook.com/sharer/sharer.php?u=' + e(link) + '&quote=' + e(text)));
-    btn('LinkedIn', go('https://www.linkedin.com/sharing/share-offsite/?url=' + e(link)));
-    var cp = btn('Copy text', function () {
-      var done = function () { cp.textContent = 'Copied!'; setTimeout(function () { cp.textContent = 'Copy text'; }, 1800); };
+    btn('𝕏 X', go('https://twitter.com/intent/tweet?text=' + e(text) + '&url=' + e(link)), 'pd-sh-x');
+    btn('💬 WhatsApp', go('https://wa.me/?text=' + e(full)), 'pd-sh-wa');
+    btn('👍 Facebook', go('https://www.facebook.com/sharer/sharer.php?u=' + e(link) + '&quote=' + e(text)), 'pd-sh-fb');
+    btn('💼 LinkedIn', go('https://www.linkedin.com/sharing/share-offsite/?url=' + e(link)), 'pd-sh-li');
+    var cp = btn('📋 Copy text', function () {
+      var done = function () { cp.textContent = '✅ Copied!'; setTimeout(function () { cp.textContent = '📋 Copy text'; }, 1800); };
       if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(full).then(done, function () { window.prompt('Copy this:', full); }); }
       else { window.prompt('Copy this:', full); }
     });
