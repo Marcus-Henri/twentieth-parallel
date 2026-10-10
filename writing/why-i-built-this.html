@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Why I Built This, and the Machine Under the Hood &middot; The 20th Parallel</title>
+<meta name="description" content="Dispatch 03: why The 20th Parallel exists, the free tools behind its first cartoon, the power of PowerShell, and what went wrong along the way.">
+<link rel="canonical" href="https://marcus-henri.github.io/twentieth-parallel/writing/why-i-built-this.html">
+<meta property="og:title" content="Why I Built This, and the Machine Under the Hood">
+<meta property="og:description" content="Dispatch 03: a complete beginner, free tools, a decent PC and a lot of curiosity. What it took to make The 20th Parallel&rsquo;s first cartoon.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://marcus-henri.github.io/twentieth-parallel/writing/why-i-built-this.html">
+<meta property="og:image" content="https://marcus-henri.github.io/twentieth-parallel/images/my-first-animation.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@markhenrysaft">
+<link rel="icon" href="../images/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&amp;family=Newsreader:opsz,wght@6..72,300..600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  .art{ max-width: 40rem; margin: 0 auto; padding: 2.5rem var(--gutter) 5rem; }
+  .art-back{ font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; }
+  .art-kicker{ margin: 2.5rem 0 0.75rem; font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+  .art h1{ font-family: var(--display); font-weight: 500; font-size: clamp(2rem, 6vw, 3rem); line-height: 1.1; margin: 0 0 1.25rem; letter-spacing: -0.01em; }
+  .art-by{ margin: 0 0 2rem; color: var(--ink-2); font-size: 0.95rem; }
+  .art-hero{ margin: 0 0 2.25rem; }
+  .art-hero img{ display: block; width: 100%; height: auto; border: 1px solid var(--rule); }
+  .art-hero figcaption{ margin-top: 0.5rem; font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.06em; color: var(--ink-3); }
+  .art p{ margin: 0 0 1.2rem; }
+  .art ul{ margin: 0 0 1.4rem; padding-left: 1.3rem; }
+  .art li{ margin-bottom: 0.5rem; }
+  .art h2{ font-family: var(--display); font-weight: 500; font-size: 1.4rem; margin: 2.2rem 0 0.8rem; }
+  .art code{ font-family: var(--mono); font-size: 0.85em; padding: 0.05em 0.35em; border: 1px solid var(--rule); border-radius: 3px; }
+  .art-names{ margin: 1.6rem 0; padding: 0.2rem 0 0.2rem 1.1rem; border-left: 3px solid var(--accent); font-style: italic; color: var(--ink-2); }
+  .art-names strong{ font-style: normal; font-weight: 600; color: var(--ink); }
+  .tools-wrap{ margin: 0 0 1.4rem; overflow-x: auto; }
+  .tools{ width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+  .tools th, .tools td{ text-align: left; vertical-align: top; padding: 0.55rem 0.7rem 0.55rem 0; border-bottom: 1px solid var(--rule); }
+  .tools th{ font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; color: var(--ink-3); border-bottom-width: 2px; }
+  .tools td:last-child{ white-space: nowrap; color: var(--ink-2); }
+  @media (max-width: 560px){ .tools{ font-size: 0.85rem; } .tools td:last-child{ white-space: normal; } .tools th, .tools td{ padding-right: 0.5rem; } }
+  .tools td.paid{ color: var(--seal); font-weight: 600; }
+  .warn{ margin: 1.6rem 0; padding: 1rem 1.15rem; border: 2px solid var(--seal); border-left-width: 6px; border-radius: 4px; background: var(--ground-tint); }
+  .warn p{ margin: 0 0 0.7rem; }
+  .warn p:last-child{ margin-bottom: 0; }
+  .warn-label{ font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--seal); font-weight: 500; }
+  .art-sign{ font-family: var(--display); font-style: italic; font-size: 1.15rem; margin-top: 1.8rem; }
+  .art-end{ margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); font-size: 0.95rem; color: var(--ink-2); }
+</style>
+</head>
+<body>
+<main class="art">
+  <a class="art-back" href="../index.html#dispatches">&larr; The 20th Parallel</a>
+  <p class="art-kicker">Dispatch 03 &middot; October 10, 2026</p>
+  <h1>Why I Built This, and the Machine Under the Hood</h1>
+  <p class="art-by">Marcus Henri (Mark Henry Saft)</p>
+  <figure class="art-hero">
+    <img src="../images/my-first-animation.jpg" width="1248" height="720" alt="A round yellow cartoon detective in a red scarf floats beside a tall, brightly painted tower against a pale yellow sky.">
+    <figcaption>A frame from The Tower, my first animation.</figcaption>
+  </figure>
+
+  <p>I made a cartoon about a detective who cannot stop looking for a tile. It took me longer than I would like to admit, and I enjoyed every hour of it. This dispatch is about why, what it took, and the one unglamorous skill that made the rest possible.</p>
+
+  <h2>Why this site exists</h2>
+  <p>This site is a calling card, but mostly it is a workbench. I wanted to see what a complete beginner could make with free tools, a decent PC and a lot of curiosity. Not to sell anything. For the pleasure of making a thing and watching it get a little better each night.</p>
+  <p class="art-names">A word on names. <strong>Marcus Henri</strong> is the name I use for the things I make for the pleasure of making them: pictures, small games, stories. <strong>Mark Henry Saft</strong> is the name on my contracts and my career. <strong>The 20th Parallel</strong> is where the two meet.</p>
+
+  <h2>Where things stand today</h2>
+  <p>The 20th Parallel now has a YouTube channel: <a href="https://www.youtube.com/@The20thParallel" target="_blank" rel="noopener"><strong>@The20thParallel</strong></a>. It opened today with <a href="https://youtube.com/shorts/6NSPqlmqkI8" target="_blank" rel="noopener"><strong>The Tower</strong></a>, fifteen seconds of animation, rough, and mine. It went up exactly as it came out, because a first attempt should be allowed to look like one.</p>
+  <p><strong>The Missing Tile</strong> follows tomorrow. A small yellow detective named Wander is hired to find one missing tile, appraised at a hundred and fifty dollars. By day three he has spent more than that looking. A collector named Hoard sells him crate after crate stamped POSSIBLY, each purchase justified by the last. I will not tell you how it ends, and I will not tell you what it is about. You will work it out. That is the rule of the series: every episode hides one lesson and never explains it.</p>
+  <p>The finished cut runs three minutes and forty-one seconds. It went through more than a dozen versions, the last one sharpened to 720p by an upscaler that runs on my own graphics card.</p>
+
+  <h2>Where it goes next</h2>
+  <p>The first season is called <strong>The Pigeon Files</strong>: six noir cases, the same detective, the same rain. After that the stage gets wider. Same cast, same format, but the cases will wander into economics, history, art and language. The rule stays the same: one hidden idea per episode, never explained.</p>
+
+  <h2>The tools</h2>
+  <p>Everything ran on my own Windows PC. All of it is free except one subscription.</p>
+  <div class="tools-wrap">
+    <table class="tools">
+      <thead><tr><th scope="col">Job</th><th scope="col">Tool</th><th scope="col">Cost</th></tr></thead>
+      <tbody>
+        <tr><td>Animation</td><td>Wan 2.2 video model, run in ComfyUI</td><td>Free, open weights</td></tr>
+        <tr><td>Voices</td><td>Voicebox, with Qwen3-TTS and Kokoro voices</td><td>Free</td></tr>
+        <tr><td>Puppets, compositing, overlays</td><td>Python, with Pillow and NumPy</td><td>Free</td></tr>
+        <tr><td>Editing, captions, sound mix</td><td>ffmpeg</td><td>Free</td></tr>
+        <tr><td>Sharpening to 720p</td><td>Real-ESRGAN</td><td>Free</td></tr>
+        <tr><td>This site</td><td>GitHub Pages</td><td>Free</td></tr>
+        <tr><td>Outside critic</td><td>Qwen3.7-Plus</td><td>Free</td></tr>
+        <tr><td>Second opinion</td><td>Google Gemini Pro</td><td>Free tier</td></tr>
+        <tr><td>Story help, code, production</td><td>Claude Pro, with Claude Code</td><td class="paid">Paid, about $20 a month</td></tr>
+        <tr><td>Artwork and photographs</td><td>Mine</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The honest ledger also includes the graphics card and the electricity. &ldquo;Free&rdquo; means no new money, not no cost.</p>
+
+  <h2>The Power of PowerShell</h2>
+  <p>I did not hand-write most of the code behind this. I described what I wanted, an AI wrote it, and I learned to read it, run it, and trust but verify. That is the point of this section. You do not need to be a programmer to benefit. You need to know the door exists.</p>
+  <p>PowerShell is the command line built into every Windows PC. It is free, it is already installed, and it does in one line what takes an afternoon of clicking. You describe the chore, an AI writes the command, you read it, you press Enter, and the chore is gone.</p>
+  <p>Here is what I have done with it, as a beginner:</p>
+  <ul>
+    <li>Turned a folder of Word documents into PDFs in one paste, then did it again for nested folders.</li>
+    <li>Found where a program was hiding on my machine in one line (<code>where.exe claude</code>).</li>
+    <li>Synced two branches of a website with a short sequence of git commands instead of a day of confusion.</li>
+    <li>Kept a contact list of more than 11,000 people in order by letting scripts patch and rebuild the file.</li>
+    <li>For this series: started and stopped the animation engine, asked the voice generator for more than forty lines of dialogue, freed the graphics card between jobs, and wrote small &ldquo;chains&rdquo; that wait for one job to finish and start the next while I sleep.</li>
+    <li>Ran long jobs detached, so they keep going after the window closes. The final episode was assembled, sharpened, loudness-checked and caption-checked by one chain while I did something else.</li>
+  </ul>
+  <aside class="warn" aria-label="A safety warning">
+    <p class="warn-label">One rule, learned from a close call</p>
+    <p>Never run a script you do not understand, and never one a website tells you to run &ldquo;to update a certificate.&rdquo; I once received exactly that from a fake recruiter. PowerShell is power, and power is also why scammers like it. Before you press Enter, ask an AI to explain the command line by line.</p>
+  </aside>
+  <p>My encouragement: spend one hour this month. Open PowerShell, ask an AI to handle one chore you hate, read the answer, run it. The first time something that took you an hour takes four seconds, you will not go back.</p>
+
+  <h2>What went wrong, honestly</h2>
+  <ul>
+    <li><strong>It looked like a slideshow in motion.</strong> The video model makes about two seconds of movement per shot. Stretched to cover dialogue, everyone drifted in slow motion. The fix was older than the technology: cut-out puppets with mouths driven by the voice, the way television cartoons have done it for decades. The video model now does only the spectacle.</li>
+    <li><strong>The crate that read POSSIBLY.</strong> AI is a terrible sign painter. Ask it for a word and you get a word-shaped rumour. One shot had a neon sign that spelled HOAND; it is gone from the final cut. Every letter you see in the film was added afterwards, by hand, in code.</li>
+    <li><strong>The missing tile.</strong> For a while the tile was missing from the film too.</li>
+  </ul>
+
+  <h2>The invitation</h2>
+  <p>If you have been meaning to make something and waiting until you know how: you will not know how until you start. Start small, make it badly, keep it, and make the next one a little better.</p>
+  <p>The Tower is on the channel now. The Missing Tile opens tomorrow.</p>
+  <p class="art-sign">Marcus Henri</p>
+
+  <p class="art-end"><a href="https://www.youtube.com/@The20thParallel" target="_blank" rel="noopener">The 20th Parallel on YouTube &rarr;</a> &middot; <a href="../index.html#dispatches">Back to the site</a></p>
+</main>
+</body>
+</html>
