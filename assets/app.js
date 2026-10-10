@@ -627,19 +627,34 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     b.appendChild(p); setTimeout(function () { if (p.parentNode) { p.parentNode.removeChild(p); } }, 1000);
     b.classList.remove('pd-squish'); void b.offsetWidth; b.classList.add('pd-squish');
   }
-  function mkNudge(cls, label, factor) {
+  /* each button says its own line out loud, on hover (once the visitor has touched the page, so never autoplay)
+     or on click; it obeys the Sound on/off switch and won't talk over itself */
+  function nudgeVoice(b) {
+    if (!snd || !snd.isOn()) { return; }
+    if (!b._voice) { b._voice = new Audio(b._voiceSrc); b._voice.volume = 0.9; }
+    var v = b._voice;
+    if (!v.paused && !v.ended) { return; }
+    try { v.currentTime = 0; var p = v.play(); if (p && p.catch) { p.catch(function () {}); } } catch (er) {}
+  }
+  function mkNudge(cls, label, factor, voiceSrc) {
     var b = document.createElement('button'); b.type = 'button'; b.className = 'pd-nudge ' + cls;
     b.innerHTML = '<span class="pd-nudge-t">' + label + '</span><span class="pd-nudge-s"></span>';
+    b._voiceSrc = voiceSrc;
+    b.addEventListener('mouseenter', function () {
+      var ua = navigator.userActivation;
+      if (gestured || (ua && ua.hasBeenActive)) { nudgeVoice(b); }
+    });
     b.addEventListener('click', function () {
       if (snd) { snd.unlock(); }
+      nudgeVoice(b);
       nudgeTarget = factor; nudgeEnd = performance.now() + NUDGE_MS; paintNudges();
       nudgeSound(factor > 1); nudgePow(b, factor > 1);
       try { if (navigator.vibrate) { navigator.vibrate(factor > 1 ? [25, 30, 25] : [70]); } } catch (er) {}
     });
     container.appendChild(b); b._f = factor; return b;
   }
-  var nudgeFast = mkNudge('pd-nudge--fast', 'Faster, faster, don’t stop!', 1.15);
-  var nudgeSlow = mkNudge('pd-nudge--slow', 'Woah, easy there cowboy.', 0.85);
+  var nudgeFast = mkNudge('pd-nudge--fast', 'Faster, faster, don’t stop!', 1.15, 'assets/audio/faster-faster.mp3');
+  var nudgeSlow = mkNudge('pd-nudge--slow', 'Whoa, easy there, cowboy.', 0.85, 'assets/audio/easy-cowboy.mp3');
   function paintNudges() {
     var left = Math.max(0, Math.ceil((nudgeEnd - performance.now()) / 1000)), on = left > 0 && nudgeTarget !== 1;
     [nudgeFast, nudgeSlow].forEach(function (b) {

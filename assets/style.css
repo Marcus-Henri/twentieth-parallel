@@ -627,7 +627,6 @@ img { max-width: 100%; }
   }
 
   /* ============ finds ============ */
-  #made{ --accent: var(--clay); }
   #smile{ --accent: var(--brass); }
   .finds{ display: flex; flex-direction: column; }
   .find{
@@ -1391,6 +1390,8 @@ a.pulse--card:hover .pulse-title{ color: var(--accent); }
 .pitch strong{ font-family: var(--display); font-weight: 500; }
 .pitch-cta{ display: inline-block; margin-top: 0.55rem; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--seal); text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 1px; }
 .pitch-cta:hover{ color: var(--accent); }
+.names{ max-width: var(--measure); margin: 1.1rem 0 0; font-family: var(--display); font-style: italic; font-size: 1.05rem; line-height: 1.55; color: var(--ink-2); }
+.names strong{ font-style: normal; font-weight: 500; color: var(--ink); }
 .now-item a.pulse--now{ margin: 1rem 0 0.75rem; max-width: 34rem; }
 
 /* recommendations */
@@ -1712,22 +1713,22 @@ a.vid + a.vid{ margin-top:1.75rem; }
 @keyframes pdBolt{ 0%{opacity:0} 6%{opacity:1} 30%{opacity:.85} 100%{opacity:0} }
 @media (prefers-reduced-motion:reduce){ .pd-bolt{ animation-duration:.4s; } }
 /* comic-book speed buttons at the tower's edges (Lichtenstein: flat primaries, Ben-Day dots, hard outlines) */
-.pd-nudge{ position:absolute; top:40%; z-index:3; width:7.7rem; padding:.7rem .6rem .6rem; margin:0; cursor:pointer; font-family:Impact,"Arial Black","Helvetica Neue",sans-serif; font-weight:900; font-size:1.02rem; line-height:1.12; letter-spacing:.02em; text-transform:uppercase; text-align:center; color:#ffe21f; border:3px solid #111; border-radius:6px; box-shadow:5px 5px 0 #111; text-shadow:2px 2px 0 #111; transition:transform .12s ease, box-shadow .12s ease; -webkit-tap-highlight-color:transparent; }
-.pd-nudge--fast{ left:-.4rem; transform:rotate(-4deg); background:radial-gradient(circle,rgba(255,226,31,.55) 28%,transparent 32%) 0 0/9px 9px, #e8312f; }
-.pd-nudge--slow{ right:-.4rem; transform:rotate(4deg); color:#fff; background:radial-gradient(circle,rgba(255,255,255,.45) 28%,transparent 32%) 0 0/9px 9px, #1f5fbf; }
+.pd-nudge{ position:absolute; top:36%; z-index:3; width:11rem; padding:1rem .85rem .85rem; margin:0; cursor:pointer; font-family:Impact,"Arial Black","Helvetica Neue",sans-serif; font-weight:900; font-size:1.5rem; line-height:1.08; letter-spacing:.02em; text-transform:uppercase; text-align:center; color:#ffe21f; border:4px solid #111; border-radius:8px; box-shadow:7px 7px 0 #111; text-shadow:3px 3px 0 #111; transition:transform .12s ease, box-shadow .12s ease; -webkit-tap-highlight-color:transparent; }
+.pd-nudge--fast{ left:-.4rem; transform:rotate(-4deg); background:radial-gradient(circle,rgba(255,226,31,.55) 28%,transparent 32%) 0 0/12px 12px, #e8312f; }
+.pd-nudge--slow{ right:-.4rem; transform:rotate(4deg); color:#fff; background:radial-gradient(circle,rgba(255,255,255,.45) 28%,transparent 32%) 0 0/12px 12px, #1f5fbf; }
 .pd-nudge:hover{ transform:rotate(0) scale(1.06); }
 .pd-nudge:active{ transform:translate(3px,3px) scale(.97); box-shadow:2px 2px 0 #111; }
 .pd-nudge:focus-visible{ outline:3px solid #ffe21f; outline-offset:3px; }
 .pd-nudge.is-on{ animation:pdNudgeOn 1s ease-in-out infinite; }
-.pd-nudge-s{ display:block; margin-top:.3rem; font-family:"Courier New",monospace; font-size:.72rem; letter-spacing:.06em; text-shadow:none; color:#111; background:#fff; border:2px solid #111; border-radius:3px; padding:0 .3rem; }
+.pd-nudge-s{ display:block; margin-top:.4rem; font-family:"Courier New",monospace; font-size:.85rem; letter-spacing:.06em; text-shadow:none; color:#111; background:#fff; border:2px solid #111; border-radius:3px; padding:0 .3rem; }
 .pd-nudge-s:empty{ display:none; }
 .pd-squish{ animation:pdSquish .45s cubic-bezier(.3,1.6,.5,1); }
 @keyframes pdSquish{ 0%{ transform:scale(1,1) } 25%{ transform:scale(1.18,.78) } 55%{ transform:scale(.9,1.16) } 100%{ transform:scale(1,1) } }
-@keyframes pdNudgeOn{ 50%{ box-shadow:5px 5px 0 #111,0 0 0 4px #ffe21f; } }
+@keyframes pdNudgeOn{ 50%{ box-shadow:7px 7px 0 #111,0 0 0 5px #ffe21f; } }
 .pd-pow{ position:absolute; left:50%; top:-1.6rem; z-index:5; pointer-events:none; padding:.2em .6em; font:900 1.5rem/1 Impact,"Arial Black",sans-serif; color:#111; background:#ffe21f; border:3px solid #111; text-shadow:none; white-space:nowrap; clip-path:polygon(0 15%,10% 0,25% 12%,40% 0,55% 12%,70% 0,85% 12%,100% 10%,94% 45%,100% 70%,86% 82%,96% 100%,68% 90%,48% 100%,30% 88%,8% 100%,12% 74%,0 58%,8% 36%); animation:pdPow 1s ease-out forwards; }
 .pd-pow--slow{ background:#9fd0ff; }
 @keyframes pdPow{ 0%{ transform:translate(-50%,10px) scale(.3) rotate(-12deg); opacity:0 } 18%{ transform:translate(-50%,-8px) scale(1.15) rotate(-6deg); opacity:1 } 70%{ transform:translate(-50%,-26px) scale(1) rotate(-4deg); opacity:1 } 100%{ transform:translate(-50%,-44px) scale(.9) rotate(-4deg); opacity:0 } }
-@media (max-width:820px){ .pd-nudge{ position:relative; display:inline-block; top:auto; left:auto; right:auto; width:9.5rem; margin:.9rem .6rem 0; } }
+@media (max-width:820px){ .pd-nudge{ position:relative; display:inline-block; vertical-align:top; top:auto; left:auto; right:auto; width:min(12rem,calc(50% - 1.2rem)); margin:1rem .5rem 0; font-size:1.25rem; } }
 @media (prefers-reduced-motion:reduce){ .pd-nudge.is-on,.pd-squish,.pd-pow,.pd-share.pd-pop{ animation:none; } }
 
 /* share card panel: a comic-panel trophy you can post */
