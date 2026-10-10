@@ -654,7 +654,7 @@ window.buildPhotoDrum = function (containerId, images, direction) {
     container.appendChild(b); b._f = factor; return b;
   }
   var nudgeFast = mkNudge('pd-nudge--fast', 'Faster, faster, don’t stop!', 1.15, 'assets/audio/faster-faster.mp3');
-  var nudgeSlow = mkNudge('pd-nudge--slow', 'Whoa, easy there, cowboy.', 0.85, 'assets/audio/easy-cowboy.mp3');
+  var nudgeSlow = mkNudge('pd-nudge--slow', 'Whoa, whoa, cowboy, slow down.', 0.85, 'assets/audio/easy-cowboy.mp3');
   function paintNudges() {
     var left = Math.max(0, Math.ceil((nudgeEnd - performance.now()) / 1000)), on = left > 0 && nudgeTarget !== 1;
     [nudgeFast, nudgeSlow].forEach(function (b) {
